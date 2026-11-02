@@ -321,6 +321,19 @@ void main() {
       // Verificar string exacto del botón "Saltar proxima alarma"
       expect(find.text('Saltar proxima alarma'), findsNWidgets(2));
 
+      // Verificar que crear una alarma nueva desde el editor la agrega a HomeScreen y guarda en disco
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.enterText(
+        find.byType(TextField).first,
+        'Alarma Creada En Test',
+      );
+      await tester.tap(find.text('GUARDAR'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.widgetWithText(InkWell, 'Alarma Creada En Test'), findsOneWidget);
+
       await tester.runAsync(() async {
         await tmpDir.delete(recursive: true);
       });
@@ -348,14 +361,13 @@ void main() {
 
       expect(find.text('Tomar antibiótico'), findsOneWidget);
       expect(find.text('Con un vaso lleno de agua'), findsOneWidget);
-      expect(find.text('Reintento automático #2'), findsOneWidget);
-      expect(find.text('APLAZAR (+15 MIN)'), findsOneWidget);
-      expect(find.text('APAGAR ALARMA'), findsOneWidget);
+      expect(find.text('Aplazar (15m)'), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
 
-      await tester.tap(find.text('APLAZAR (+15 MIN)'));
+      await tester.tap(find.text('Aplazar (15m)'));
       expect(snoozed, isTrue);
 
-      await tester.tap(find.text('APAGAR ALARMA'));
+      await tester.tap(find.byIcon(Icons.close));
       expect(dismissed, isTrue);
     });
   });

@@ -36,7 +36,7 @@ object AlarmEngine {
     const val ACTION_SKIP_NEXT = "com.oled.reminder.ACTION_SKIP_NEXT"
 
     const val CH_RINGING = "oled_alarm_ringing"
-    const val CH_UPCOMING = "oled_alarm_upcoming"
+    const val CH_UPCOMING = "oled_alarm_upcoming_v2"
     const val CH_MISSED = "oled_alarm_missed"
 
     const val NOTIF_RINGING = 1001
@@ -123,9 +123,11 @@ object AlarmEngine {
         val upCh = NotificationChannel(
             CH_UPCOMING,
             "Próxima alarma",
-            NotificationManager.IMPORTANCE_LOW
+            NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
             description = "Muestra la próxima alarma y permite saltarla"
+            setSound(null, null)
+            enableVibration(false)
             setShowBadge(false)
         }
 

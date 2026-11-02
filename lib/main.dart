@@ -6,6 +6,8 @@ import 'alarm_api.dart';
 import 'models.dart';
 import 'storage.dart';
 
+const kAccentGrey = Color(0xFFB0B0B0);
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
@@ -33,8 +35,8 @@ class OledAlarmApp extends StatelessWidget {
         cardColor: const Color(0xFF0A0A0A),
         dividerColor: const Color(0xFF222222),
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00E676),
-          secondary: Color(0xFF00B0FF),
+          primary: kAccentGrey,
+          secondary: Color(0xFF888888),
           surface: Colors.black,
           error: Color(0xFFFF5252),
         ),
@@ -76,11 +78,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     AlarmApi.setEventHandler((_) => _refreshAll());
-    _refreshAll();
-    // Refresh countdown strings once every 20s only while UI is open
+    _initAndRequestNotificationIfNeeded();
     _ticker = Timer.periodic(const Duration(seconds: 20), (_) {
       if (mounted) setState(() {});
     });
+  }
+
+  Future<void> _initAndRequestNotificationIfNeeded() async {
+    await _refreshAll();
+    if (_perms['notifications'] == false) {
+      await AlarmApi.requestPermission('notifications');
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      await _refreshAll();
+    }
   }
 
   @override
@@ -155,9 +165,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             .where((r) => r.folderId == null || !folderMap.containsKey(r.folderId))
             .toList();
 
-    final missingPerms =
-        _perms.entries.where((e) => e.value == false).map((e) => e.key).toList();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -171,18 +178,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             onPressed: () => _openFolderDialog(),
           ),
           IconButton(
-            tooltip: 'Blindaje Batería / Samsung',
-            icon: Icon(
-              Icons.shield_outlined,
-              color:
-                  missingPerms.isEmpty
-                      ? const Color(0xFF00E676)
-                      : Colors.amberAccent,
-            ),
-            onPressed: () => _openBatteryShieldSheet(),
-          ),
-          IconButton(
-            tooltip: 'Ajustes y Backup',
+            tooltip: 'Ajustes y Permisos',
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => _openSettingsSheet(),
           ),
@@ -191,8 +187,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
         children: [
-          if (missingPerms.isNotEmpty)
-            _buildPermissionBanner(missingPerms.length),
           if (_state.folders.isEmpty && _state.reminders.isEmpty)
             const Padding(
               padding: EdgeInsets.only(top: 120),
@@ -225,38 +219,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ],
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF00E676),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Nueva Alarma',
+        backgroundColor: kAccentGrey,
         foregroundColor: Colors.black,
-        icon: const Icon(Icons.add_alarm),
-        label: const Text(
-          'Nueva Alarma',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
         onPressed: () => _openReminderEditor(),
-      ),
-    );
-  }
-
-  Widget _buildPermissionBanner(int count) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF141000),
-        border: Border.all(color: Colors.amberAccent.withValues(alpha: 0.6)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        leading: const Icon(Icons.warning_amber_rounded, color: Colors.amberAccent),
-        title: Text(
-          'Faltan $count permisos críticos anti-batería',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        ),
-        subtitle: const Text(
-          'Tocá acá para evitar que Android / Samsung cierre tus alarmas.',
-          style: TextStyle(fontSize: 12, color: Colors.white70),
-        ),
-        onTap: _openBatteryShieldSheet,
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -339,7 +307,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     value: folder.isEnabled,
                     activeThumbColor: folderColor,
                     onChanged: (v) {
-                      // Master folder switch preserves individual r.isEnabled memory
                       folder.isEnabled = v;
                       _save();
                     },
@@ -393,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color:
-              isActive ? const Color(0xFF282828) : const Color(0xFF161616),
+              isActive ? const Color(0xFF333333) : const Color(0xFF161616),
         ),
       ),
       child: InkWell(
@@ -437,7 +404,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ),
                   Switch(
                     value: r.isEnabled,
-                    activeThumbColor: const Color(0xFF00E676),
+                    activeThumbColor: kAccentGrey,
                     onChanged: (v) {
                       r.isEnabled = v;
                       if (!v) {
@@ -465,10 +432,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   Icon(
                     Icons.schedule,
                     size: 14,
-                    color:
-                        isActive
-                            ? const Color(0xFF00E676)
-                            : Colors.white38,
+                    color: isActive ? kAccentGrey : Colors.white38,
                   ),
                   const SizedBox(width: 4),
                   Expanded(
@@ -481,10 +445,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color:
-                            isActive
-                                ? const Color(0xFF00E676)
-                                : Colors.white38,
+                        color: isActive ? kAccentGrey : Colors.white38,
                       ),
                     ),
                   ),
@@ -492,7 +453,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     TextButton.icon(
                       style: TextButton.styleFrom(
                         visualDensity: VisualDensity.compact,
-                        foregroundColor: Colors.amberAccent,
+                        foregroundColor: kAccentGrey,
                       ),
                       icon: const Icon(Icons.skip_next, size: 16),
                       label: const Text(
@@ -512,16 +473,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _openFolderDialog({Folder? existing}) async {
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
-    int selectedColor = existing?.color ?? 0xFF00E676;
+    int selectedColor = existing?.color ?? 0xFF9E9E9E;
     int selectedIcon = existing?.icon ?? Icons.folder.codePoint;
 
     const palette = [
-      0xFF00E676,
-      0xFF00B0FF,
-      0xFFFFAB00,
-      0xFFFF5252,
-      0xFFE040FB,
-      0xFF1DE9B6,
+      0xFF9E9E9E,
+      0xFFE0E0E0,
+      0xFF757575,
+      0xFF90A4AE,
+      0xFFB0BEC5,
+      0xFF616161,
     ];
     final icons = _folderIcons.keys.toList();
 
@@ -638,20 +599,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _openReminderEditor({Reminder? existing}) async {
-    final result = await Navigator.push<String>(
+    final result = await Navigator.push<Reminder?>(
       context,
       MaterialPageRoute(
         builder:
             (_) => ReminderEditorScreen(
               existing: existing,
               folders: _state.folders,
+              onDelete:
+                  existing == null
+                      ? null
+                      : () {
+                        _state.reminders.removeWhere(
+                          (r) => r.id == existing.id,
+                        );
+                        Navigator.pop(context, null);
+                        _save();
+                      },
             ),
       ),
     );
-    if (result == 'delete' && existing != null) {
-      _state.reminders.removeWhere((r) => r.id == existing.id);
-      await _save();
-    } else if (result == 'saved') {
+    if (result != null) {
+      if (existing == null) {
+        _state.reminders.add(result);
+      }
       await _save();
     }
   }
@@ -683,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Blindaje Anti-Batería & Samsung',
+                    'Permisos y Blindaje Anti-Batería',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 6),
@@ -717,7 +688,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(
                       Icons.phone_android,
-                      color: Colors.lightBlueAccent,
+                      color: kAccentGrey,
                     ),
                     title: const Text(
                       'Samsung One UI: Batería -> "No restringido"',
@@ -749,14 +720,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       contentPadding: EdgeInsets.zero,
       leading: Icon(
         ok ? Icons.check_circle : Icons.error_outline,
-        color: ok ? const Color(0xFF00E676) : Colors.amberAccent,
+        color: ok ? kAccentGrey : Colors.white54,
       ),
       title: Text(title, style: const TextStyle(fontSize: 14)),
       trailing:
           ok
               ? const Text(
                 'Activo',
-                style: TextStyle(color: Color(0xFF00E676), fontSize: 12),
+                style: TextStyle(color: kAccentGrey, fontSize: 12),
               )
               : FilledButton.tonal(
                 onPressed: onTap,
@@ -770,6 +741,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     int ringMins = s.ringDurationMinutes;
     int pauseMins = s.autoSnoozeMinutes;
     int retries = s.maxAutoRetries;
+    final missingPerms =
+        _perms.entries.where((e) => e.value == false).length;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -832,7 +805,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       child: const Text('Guardar Ajustes'),
                     ),
                   ),
-                  const Divider(height: 28),
+                  const Divider(height: 24),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.shield_outlined, color: kAccentGrey),
+                    title: const Text(
+                      'Permisos y Blindaje Anti-Batería',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      missingPerms == 0
+                          ? 'Todos los permisos activos'
+                          : 'Faltan $missingPerms permisos por activar',
+                      style: const TextStyle(fontSize: 12, color: Colors.white60),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _openBatteryShieldSheet();
+                    },
+                  ),
+                  const Divider(height: 24),
                   const Text(
                     'Backup Local (JSON)',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
@@ -958,11 +951,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 class ReminderEditorScreen extends StatefulWidget {
   final Reminder? existing;
   final List<Folder> folders;
+  final VoidCallback? onDelete;
 
   const ReminderEditorScreen({
     super.key,
     required this.existing,
     required this.folders,
+    this.onDelete,
   });
 
   @override
@@ -1072,10 +1067,10 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
       target.soundName = updated.soundName;
       target.vibrate = updated.vibrate;
       target.customVolume = updated.customVolume;
+      Navigator.pop(context, target);
     } else {
-      // Append to caller's list via Storage or pass back
+      Navigator.pop(context, _draft);
     }
-    Navigator.pop(context, 'saved');
   }
 
   @override
@@ -1086,17 +1081,17 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
           widget.existing == null ? 'Nueva Alarma' : 'Editar Alarma',
         ),
         actions: [
-          if (widget.existing != null)
+          if (widget.existing != null && widget.onDelete != null)
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              onPressed: () => Navigator.pop(context, 'delete'),
+              onPressed: widget.onDelete,
             ),
           TextButton(
-            onPressed: _saveWithAddSupport,
+            onPressed: _commitSave,
             child: const Text(
               'GUARDAR',
               style: TextStyle(
-                color: Color(0xFF00E676),
+                color: kAccentGrey,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1148,7 +1143,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF00E676),
+              color: kAccentGrey,
             ),
           ),
           const SizedBox(height: 8),
@@ -1264,7 +1259,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF00E676),
+              color: kAccentGrey,
             ),
           ),
           const SizedBox(height: 8),
@@ -1363,7 +1358,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF00E676),
+              color: kAccentGrey,
             ),
           ),
           const SizedBox(height: 8),
@@ -1386,7 +1381,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
             title: const Text('Sonido de alarma'),
             subtitle: Text(
               _draft.soundName,
-              style: const TextStyle(color: Color(0xFF00E676)),
+              style: const TextStyle(color: kAccentGrey),
             ),
             trailing: PopupMenuButton<String>(
               icon: const Icon(Icons.music_note),
@@ -1461,29 +1456,10 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
               onChanged:
                   (v) => setState(() => _draft.customVolume = v.round()),
             ),
+          const SizedBox(height: 32),
         ],
       ),
     );
-  }
-
-  Future<void> _saveWithAddSupport() async {
-    final name = _nameCtrl.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Poné un nombre para la alarma')),
-      );
-      return;
-    }
-    if (widget.existing == null) {
-      _draft.name = name;
-      _draft.note = _noteCtrl.text.trim();
-      final state = await Storage.load();
-      state.reminders.add(_draft);
-      await Storage.saveAndSync(state);
-      if (mounted) Navigator.pop(context, 'saved');
-    } else {
-      _commitSave();
-    }
   }
 }
 
@@ -1499,127 +1475,166 @@ class RingingScreen extends StatelessWidget {
     required this.onSnooze,
   });
 
+  static String _formatDateLine(DateTime dt) {
+    const days = [
+      '',
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+      'Domingo',
+    ];
+    const months = [
+      '',
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
+    return '${days[dt.weekday]}, ${dt.day} ${months[dt.month]} ${dt.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final now = TimeOfDay.now();
+    final now = DateTime.now();
     final timeStr =
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final dateStr = _formatDateLine(now);
     final name = (alarm['name'] as String?) ?? 'Alarma';
     final note = (alarm['note'] as String?) ?? '';
     final snoozeMins = (alarm['snoozeMinutes'] as int?) ?? 10;
-    final retry = (alarm['retryCount'] as int?) ?? 0;
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                children: [
-                  const SizedBox(height: 24),
-                  const Icon(
-                    Icons.alarm_on,
-                    size: 56,
-                    color: Color(0xFF00E676),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    timeStr,
-                    style: const TextStyle(
-                      fontSize: 72,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  if (retry > 0)
+        child: SizedBox(
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 44),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  children: [
+                    const SizedBox(height: 20),
                     Text(
-                      'Reintento automático #$retry',
+                      timeStr,
                       style: const TextStyle(
-                        color: Colors.amberAccent,
-                        fontSize: 14,
+                        fontSize: 76,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 1.5,
+                        height: 1.0,
                       ),
                     ),
-                ],
-              ),
-              Column(
-                children: [
-                  Text(
-                    name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (note.isNotEmpty) ...[
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
                     Text(
-                      note,
-                      textAlign: TextAlign.center,
+                      dateStr,
                       style: const TextStyle(
                         fontSize: 20,
+                        fontWeight: FontWeight.w400,
                         color: Colors.white70,
                       ),
                     ),
                   ],
-                ],
-              ),
-              Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 68,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Colors.amberAccent,
-                          width: 2,
-                        ),
-                        foregroundColor: Colors.amberAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                      ),
-                      icon: const Icon(Icons.snooze, size: 28),
-                      label: Text(
-                        'APLAZAR (+$snoozeMins MIN)',
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Column(
+                    children: [
+                      Text(
+                        name,
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontSize: 20,
+                          fontSize: 30,
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
-                      onPressed: onSnooze,
-                    ),
+                      if (note.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          note,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 76,
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF00E676),
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                ),
+                Column(
+                  children: [
+                    GestureDetector(
+                      onTap: onDismiss,
+                      child: Container(
+                        width: 112,
+                        height: 112,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.10),
+                        ),
+                        alignment: Alignment.center,
+                        child: Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.22),
+                          ),
+                          alignment: Alignment.center,
+                          child: Container(
+                            width: 68,
+                            height: 68,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.black,
+                              size: 32,
+                            ),
+                          ),
                         ),
                       ),
-                      icon: const Icon(Icons.alarm_off, size: 30),
-                      label: const Text(
-                        'APAGAR ALARMA',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      onPressed: onDismiss,
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(height: 36),
+                    SizedBox(
+                      width: 220,
+                      height: 54,
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          shape: const StadiumBorder(),
+                        ),
+                        onPressed: onSnooze,
+                        child: Text(
+                          'Aplazar (${snoozeMins}m)',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -17,7 +17,7 @@ class Folder {
   Folder({
     required this.id,
     required this.name,
-    this.color = 0xFF00E676,
+    this.color = 0xFF9E9E9E,
     this.icon = 0xe2c7, // Icons.folder
     this.isEnabled = true,
     this.isExpanded = true,
@@ -35,7 +35,7 @@ class Folder {
   factory Folder.fromJson(Map<String, dynamic> j) => Folder(
     id: j['id'] as String,
     name: j['name'] as String,
-    color: (j['color'] as int?) ?? 0xFF00E676,
+    color: (j['color'] as int?) ?? 0xFF9E9E9E,
     icon: (j['icon'] as int?) ?? 0xe2c7,
     isEnabled: (j['isEnabled'] as bool?) ?? true,
     isExpanded: (j['isExpanded'] as bool?) ?? true,
