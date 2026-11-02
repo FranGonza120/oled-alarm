@@ -211,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               padding: EdgeInsets.only(top: 120),
               child: Center(
                 child: Text(
-                  'Sin alarmas.\nTocá + para crear un recordatorio o carpeta.',
+                  'Sin alarmas.\nTocá + para crear un recordatorio',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white54, fontSize: 15),
                 ),

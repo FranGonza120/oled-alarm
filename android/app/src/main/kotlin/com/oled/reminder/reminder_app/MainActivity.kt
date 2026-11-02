@@ -50,6 +50,11 @@ class MainActivity : FlutterActivity() {
         channel?.invokeMethod("onStateChanged", "reload")
     }
 
+    override fun onStop() {
+        super.onStop()
+        AlarmEngine.checkPermissionsAndNotifyIfReverted(applicationContext)
+    }
+
     private fun enableLockscreenWake() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)

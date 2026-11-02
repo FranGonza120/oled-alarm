@@ -40,6 +40,7 @@ object AlarmEngine {
     const val CH_RINGING = "oled_alarm_ringing"
     const val CH_UPCOMING = "oled_alarm_upcoming_v2"
     const val CH_MISSED = "oled_alarm_missed"
+    const val CH_ALERTS = "oled_alarm_perm_alerts"
 
     const val NOTIF_RINGING = 1001
     const val NOTIF_UPCOMING = 1002
@@ -140,9 +141,18 @@ object AlarmEngine {
             NotificationManager.IMPORTANCE_DEFAULT
         )
 
+        val alertCh = NotificationChannel(
+            CH_ALERTS,
+            "Alertas de permisos",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Avulsa si se revierte un permiso crítico o de batería"
+        }
+
         nm.createNotificationChannel(ringCh)
         nm.createNotificationChannel(upCh)
         nm.createNotificationChannel(missedCh)
+        nm.createNotificationChannel(alertCh)
     }
 
     private fun matchesDay(rem: JSONObject, dayCal: Calendar): Boolean {
@@ -319,32 +329,28 @@ object AlarmEngine {
         )
     }
 
+    @Volatile
+    private var lastAlertMask: Int = 0
+
     fun checkPermissionsAndNotifyIfReverted(ctx: Context): Map<String, Boolean> {
         ensureChannels(ctx)
         val current = collectPermissions(ctx)
-        val prefs = deviceSafeCtx(ctx).getSharedPreferences("perm_monitor_v2", Context.MODE_PRIVATE)
-        val editor = prefs.edit()
-        var shouldAlert = false
+        val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        for ((k, isOk) in current) {
-            val prevOk = if (prefs.contains("prev_$k")) prefs.getBoolean("prev_$k", true) else null
-            if (isOk) {
-                editor.putBoolean("prev_$k", true)
-            } else {
-                // Alert if it transitioned from true -> false, or on first check for unusedApps if enabled by default
-                if (prevOk == true || (prevOk == null && k == "unusedApps")) {
-                    shouldAlert = true
-                }
-                editor.putBoolean("prev_$k", false)
+        var badMask = 0
+        val keys = listOf("battery", "exactAlarm", "notifications", "fullScreen", "unusedApps")
+        for ((idx, k) in keys.withIndex()) {
+            if (current[k] == false) {
+                badMask = badMask or (1 shl idx)
             }
         }
-        editor.apply()
 
-        val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val allOk = current.values.all { it }
-        if (allOk) {
+        if (badMask == 0) {
+            lastAlertMask = 0
             nm.cancel(NOTIF_PERM_ALERT)
-        } else if (shouldAlert) {
+        } else if ((badMask and lastAlertMask.inv()) != 0) {
+            // At least one permission newly became false (or is false on first check)
+            lastAlertMask = badMask
             val openIntent = Intent(ctx, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
@@ -355,19 +361,27 @@ object AlarmEngine {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Notification.Builder(ctx, CH_MISSED)
+                Notification.Builder(ctx, CH_ALERTS)
             } else {
                 @Suppress("DEPRECATION")
                 Notification.Builder(ctx)
             }
+            val msg = if (current["unusedApps"] == false) {
+                "Se activó 'Administrar aplicación si no se usa'. Tocá para desactivarlo en Ajustes > Escudo."
+            } else {
+                "Se revirtió un permiso crítico de OLED Alarm. Tocá para revisarlo en Ajustes > Escudo."
+            }
             val notif = builder
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle("Acción requerida en permisos")
-                .setContentText("Desactivá 'Administrar aplicación no usada' o revisá los permisos en Ajustes > Escudo.")
+                .setContentTitle("Permiso crítico modificado")
+                .setContentText(msg)
+                .setStyle(Notification.BigTextStyle().bigText(msg))
                 .setContentIntent(openPi)
                 .setAutoCancel(true)
                 .build()
             nm.notify(NOTIF_PERM_ALERT, notif)
+        } else {
+            lastAlertMask = badMask
         }
         return current
     }
