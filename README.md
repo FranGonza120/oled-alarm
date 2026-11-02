@@ -1,55 +1,105 @@
-# OLED Alarm Reminder App (Android / Flutter)
+<p align="center">
+  <img src="assets/icon/app_icon.jpg" width="140" alt="OLED Alarm Icon" />
+</p>
 
-Aplicación Android en Flutter para recordatorios tipo alarma de alta confiabilidad, bajo consumo de batería y tema OLED (`#000000`).
+<h1 align="center">OLED Alarm</h1>
 
-## Requerimientos Funcionales (Ver detalle completo en [`docs/SPEC.md`](docs/SPEC.md))
-1. **Recordatorios como Alarma**:
-   - Nombre obligatorio + Nota opcional (visible en pantalla de bloqueo).
-   - Activación y desactivación rápida (toggle de 1 toque), indicador `"Suena en Xh Ym"`, y botón **"Saltar proxima alarma"** tanto en la tarjeta de la app como en una **notificación con la próxima alarma a sonar**.
-   - **Recurrencia combinada Fecha + Hora**:
-     - *Por fecha*: Una vez, días de la semana (Lun-Dom), o cada $N$ días/semanas/meses.
-     - *Por hora*: Hora fija única o **recursiva cada $X$ horas/minutos dentro de una ventana activa** (ej. 08:00 a 22:00 o 24h) calculada en grilla fija.
-   - **Carpetas colapsables**: Un nivel con color/ícono y **switch maestro con memoria** (al reactivar la carpeta, restaura solo las alarmas que estaban encendidas). Las alarmas sin carpeta se agrupan al final de la lista.
-2. **Pantalla de Disparo (Ringing Screen) y Ciclo de No Atendida**:
-   - Se muestra sobre pantalla de bloqueo (`fullScreenIntent`) con 2 botones grandes: **Apagar** y **Aplazar** (usa el tiempo preconfigurado de esa alarma).
-   - **Ciclo automático global**: Si nadie la apaga, suena durante $X$ min (default 2 min), descansa $Y$ min (default 5 min) y vuelve a sonar hasta $N$ repeticiones configurables en Ajustes. Si se superpone con el siguiente horario programado (de la misma u otra alarma), se reinicia el contador de repeticiones y suena el nuevo turno.
-3. **Audio y Volumen**:
-   - Canal de **Alarma** (`USAGE_ALARM` / `STREAM_ALARM`), vibración configurable y opción de forzar volumen de alarma específico.
-   - Sonido predeterminado, selector de alarmas del sistema Android o archivo de audio local (`.mp3/.ogg/.wav`).
-4. **Diseño OLED y Backup**:
-   - Tema negro puro (`#000000`) y exportación/importación de backup en JSON local.
-5. **Batería y Supervivencia en Segundo Plano (Anti-Killer / Samsung / OEM)**:
-   - **Cero polling en segundo plano**: No mantener servicios corriendo 24/7. Usar `AlarmManager.setAlarmClock()` nativo de Android, que registra la alarma a nivel de sistema operativo (muestra ícono de alarma en barra de estado, despierta el CPU de Doze exactamente a la hora y consume 0% de batería mientras espera).
-   - **Foreground Service solo al sonar**: Se levanta un `ForegroundService` (`specialUse` / `mediaPlayback`) únicamente cuando la alarma se dispara.
-   - **Persistencia ante reinicios**: `BroadcastReceiver` para `BOOT_COMPLETED`, `QUICKBOOT_POWERON`, `TIME_SET` y `TIMEZONE_CHANGED` que reprograma las alarmas activas.
-   - **Permisos críticos y exención OEM**:
-     - `USE_EXACT_ALARM` / `SCHEDULE_EXACT_ALARM`
-     - `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (exención directa de Doze/ahorro de batería)
-     - `USE_FULL_SCREEN_INTENT` y `POST_NOTIFICATIONS`
-     - `WAKE_LOCK` y `RECEIVE_BOOT_COMPLETED`
-     - Guía en app / intents directos para desactivar "Poner apps en suspensión profunda" de Samsung (Device Care / Freecess).
+<p align="center">
+  <strong>Ultra-minimalist, zero-idle-battery Android alarm & recurring reminder app built with Flutter and a native Kotlin <code>AlarmClock</code> engine.</strong>
+</p>
 
-## Arquitectura e Infraestructura (Minimalista / Ponytail)
-Sin sobre-ingeniería (sin Clean Architecture de 30 carpetas ni BLoC complejos):
-- **Persistencia**: `sqflite` (SQLite nativo en Android) o `shared_preferences` con JSON en una sola tabla/archivo para carpetas y recordatorios.
-- **Motor de Alarmas**: Canal nativo Kotlin (`MethodChannel`) directo contra `AlarmManager.setAlarmClock()` + `BroadcastReceiver` + `Ringtone`/`MediaPlayer` en `USAGE_ALARM`, o plugin `alarm` configurado sobre `AlarmClock`. El canal nativo propio en Kotlin (~150 líneas) garantiza control total sobre `setAlarmClock`, WakeLocks y reinicios sin depender de abstracciones de terceros que fallan en Samsung.
-- **Estructura del proyecto**:
-  ```text
-  reminder_app/
-  ├── android/          # Manifiesto con permisos, AlarmReceiver y AlarmService nativo
-  ├── assets/sounds/    # Sonidos predeterminados
-  ├── docs/             # Documentación técnica y decisiones
-  └── lib/
-      ├── main.dart     # Entrada y tema OLED (#000000)
-      ├── models.dart   # Modelos Folder y Reminder (serialización simple)
-      ├── storage.dart  # Persistencia local SQLite / JSON
-      ├── alarm_api.dart# Puente MethodChannel con AlarmManager nativo
-      └── screens/      # Home (carpetas/toggles), Editor, RingScreen (apagar/aplazar)
-  ```
+---
 
-## Roadmap de Desarrollo
-1. **Fase 1 (Actual)**: Setup de Git, estructura base de directorios y documentación de arquitectura.
-2. **Fase 2**: Inicialización del proyecto Flutter + Configuración de `AndroidManifest.xml` (permisos de alarma exacta, batería, boot, full screen).
-3. **Fase 3**: Motor nativo Android (`setAlarmClock`, audio en canal `STREAM_ALARM`, pantalla sobre bloqueo y reprogramación en boot).
-4. **Fase 4**: Persistencia de carpetas/recordatorios, lógica de recurrencia y aplazamiento (snooze).
-5. **Fase 5**: UI OLED negra pura, selector de sonidos y asistente de permisos contra ahorro de batería (Samsung/Xiaomi).
+## Overview
+
+**OLED Alarm** is an Android reminder application designed to behave like a true hardware-level system alarm rather than a standard notification reminder. It features a pure `#000000` AMOLED dark theme with grey accents, collapsible folders with state memory, combined date + hourly fixed-grid recurrence, and aggressive protection against Android Doze and OEM background killers (such as Samsung One UI Deep Sleep).
+
+---
+
+## Key Features
+
+- **True Alarm Behavior (`STREAM_ALARM`)**
+  - Plays over the native Android **Alarm audio stream** (`USAGE_ALARM`), bypassing silent/vibrate modes.
+  - Choose between the default system alarm, any Android system alarm tone, or a custom local audio file (`.mp3`, `.ogg`, `.wav`).
+  - Optional per-alarm **forced alarm volume percentage** (automatically restores your previous system alarm volume after dismissal).
+- **Combined Date & Fixed-Grid Hourly Recurrence**
+  - **Date Rules**:
+    - *Once*: Specific date (`YYYY-MM-DD`).
+    - *Weekdays*: Any combination of Monday through Sunday.
+    - *Every N*: Every $N$ days, weeks, or months from a start date.
+  - **Time Rules**:
+    - *Fixed Time*: Rings once at `HH:mm` on matching days.
+    - *Hourly Recurring*: Rings every custom `HH:mm` interval (picked via a 24h time picker) within a configurable active window (e.g., `08:00` to `22:00` or `24h`). Calculated on a strict fixed grid from the start time so snoozing never shifts future slots.
+- **Collapsible Folders with Memory**
+  - Organize alarms into custom-colored/icon folders or leave them ungrouped at the bottom of the list.
+  - **Master Folder Toggle with Memory**: Disabling a folder pauses all alarms inside it while remembering which individual alarms were enabled; re-enabling the folder restores only those previously active alarms.
+- **Upcoming Alarm Notification & One-Tap Skip**
+  - Persistent status bar notification showing the next scheduled alarm with a **"Skip next alarm"** action button to skip the next occurrence without opening the app or disabling the recurrence.
+- **Lockscreen Wake (No Keyguard Prompt)**
+  - Wakes the screen over the lockscreen (`setShowWhenLocked` / `setTurnScreenOn`) displaying 24h time, date, title, and note without forcing a PIN/pattern unlock screen.
+  - Dismiss by **tapping or swiping** the `✕` button, or snooze with a single tap—immediately returning to the lockscreen when locked.
+- **Global Unanswered Alarm Cycle**
+  - Configurable global cycle: rings for $X$ minutes (default `2m`), pauses for $Y$ minutes (default `5m`), and repeats up to $N$ times (default `3`).
+  - Smart collision handling: if an auto-retry overlaps with the next scheduled grid slot (from the same or another alarm), the retry counter resets and the new schedule fires on time.
+- **0% Idle Battery & Reboot Survival (Direct Boot)**
+  - Zero background polling services. Uses Android's `AlarmManager.setAlarmClock()` so the OS kernel wakes the device at the exact millisecond.
+  - Stores state in **Device Protected Storage** (`createDeviceProtectedStorageContext`) and listens to `LOCKED_BOOT_COMPLETED`, `BOOT_COMPLETED`, `QUICKBOOT_POWERON`, `TIME_SET`, and `TIMEZONE_CHANGED`—rescheduling alarms immediately after a reboot even before the phone is unlocked.
+- **Real-Time Permission & Auto-Revoke Shield**
+  - Monitors critical permissions (`Ignore Battery Optimizations`, `Exact Alarms`, `Notifications`, `Full Screen Intent`, and Android's `"Manage app if unused"` auto-revoke setting).
+  - Alerts you immediately with a notification and red indicator dots on the Settings gear and Shield icon if the OS reverts any protection.
+- **Local JSON Backup**
+  - One-tap export/copy and import/restore of all folders, alarms, and global settings as plain JSON.
+
+---
+
+## Project Structure
+
+Built with zero third-party runtime dependencies (`ponytail ultra` standard):
+
+```text
+oled-alarm/
+├── android/app/src/main/
+│   ├── AndroidManifest.xml                                    # DirectBoot, ExactAlarm, FullScreen permissions
+│   └── kotlin/com/oled/reminder/reminder_app/
+│       ├── AlarmEngine.kt                                     # Native setAlarmClock scheduler, Audio/ForegroundService, BootReceiver
+│       └── MainActivity.kt                                    # MethodChannel bridge, lockscreen wake, system pickers
+├── assets/icon/app_icon.jpg                                   # App icon source
+├── docs/
+│   ├── ARCHITECTURE.md                                        # Initial architecture & roadmap notes
+│   └── SPEC.md                                                # Full functional specification & coding standards
+├── lib/
+│   ├── main.dart                                              # Pure #000000 OLED UI (Home, Editor, RingingScreen, Settings)
+│   ├── models.dart                                            # Folder, Reminder, AppSettings & fixed-grid recurrence engine
+│   ├── storage.dart                                           # Atomic JSON persistence shared with native Kotlin
+│   └── alarm_api.dart                                         # Flutter MethodChannel wrapper
+└── test/
+    └── widget_test.dart                                       # Unit & widget test suite
+```
+
+---
+
+## Build & Install
+
+### Prerequisites
+- Flutter SDK (`^3.13.5`)
+- Android SDK (API 36 / Java 17)
+
+### Run Tests
+```bash
+flutter analyze
+flutter test
+cd android && ./gradlew testDebugUnitTest
+```
+
+### Build & Install Release APK via USB
+```bash
+flutter build apk --release
+flutter install --release
+```
+The compiled release APK is generated at `build/app/outputs/flutter-apk/app-release.apk`.
+
+---
+
+## Documentation
+- [Functional Specification & Standards (`docs/SPEC.md`)](docs/SPEC.md)
+- [Architecture & Roadmap History (`docs/ARCHITECTURE.md`)](docs/ARCHITECTURE.md)
