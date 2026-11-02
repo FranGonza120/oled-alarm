@@ -300,9 +300,11 @@ object AlarmEngine {
             nm.canUseFullScreenIntent()
         } else true
 
+        // isAutoRevokeWhitelisted == true means the app IS whitelisted (exempt) from auto-revoke/hibernation,
+        // i.e. "Manage app if unused" is OFF (safe). When "Manage app if unused" is ON, isAutoRevokeWhitelisted == false!
         val unusedAppsDisabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             try {
-                !ctx.packageManager.isAutoRevokeWhitelisted
+                ctx.packageManager.isAutoRevokeWhitelisted
             } catch (_: Exception) {
                 true
             }
@@ -320,16 +322,20 @@ object AlarmEngine {
     fun checkPermissionsAndNotifyIfReverted(ctx: Context): Map<String, Boolean> {
         ensureChannels(ctx)
         val current = collectPermissions(ctx)
-        val prefs = deviceSafeCtx(ctx).getSharedPreferences("perm_monitor", Context.MODE_PRIVATE)
+        val prefs = deviceSafeCtx(ctx).getSharedPreferences("perm_monitor_v2", Context.MODE_PRIVATE)
         val editor = prefs.edit()
-        var reverted = false
+        var shouldAlert = false
 
         for ((k, isOk) in current) {
-            val wasGrantedEver = prefs.getBoolean("ever_$k", false)
+            val prevOk = if (prefs.contains("prev_$k")) prefs.getBoolean("prev_$k", true) else null
             if (isOk) {
-                editor.putBoolean("ever_$k", true)
-            } else if (wasGrantedEver) {
-                reverted = true
+                editor.putBoolean("prev_$k", true)
+            } else {
+                // Alert if it transitioned from true -> false, or on first check for unusedApps if enabled by default
+                if (prevOk == true || (prevOk == null && k == "unusedApps")) {
+                    shouldAlert = true
+                }
+                editor.putBoolean("prev_$k", false)
             }
         }
         editor.apply()
@@ -338,7 +344,7 @@ object AlarmEngine {
         val allOk = current.values.all { it }
         if (allOk) {
             nm.cancel(NOTIF_PERM_ALERT)
-        } else if (reverted) {
+        } else if (shouldAlert) {
             val openIntent = Intent(ctx, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
@@ -356,8 +362,8 @@ object AlarmEngine {
             }
             val notif = builder
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle("Permiso crítico desactivado")
-                .setContentText("Un ajuste de OLED Alarm se revirtió. Tocá para revisarlo en Ajustes > Escudo.")
+                .setContentTitle("Acción requerida en permisos")
+                .setContentText("Desactivá 'Administrar aplicación no usada' o revisá los permisos en Ajustes > Escudo.")
                 .setContentIntent(openPi)
                 .setAutoCancel(true)
                 .build()
