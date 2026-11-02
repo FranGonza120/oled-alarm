@@ -2,20 +2,22 @@
 
 Aplicación Android en Flutter para recordatorios tipo alarma de alta confiabilidad, bajo consumo de batería y tema OLED (`#000000`).
 
-## Requerimientos Funcionales
+## Requerimientos Funcionales (Ver detalle completo en [`docs/SPEC.md`](docs/SPEC.md))
 1. **Recordatorios como Alarma**:
-   - Nombre personalizado por recordatorio.
-   - Activación y desactivación rápida (toggle de 1 toque).
-   - Fechas y horarios recurrentes (días de semana, intervalos, fecha específica).
-   - Organización por carpetas / categorías.
-2. **Pantalla de Disparo (Ringing Screen)**:
-   - Se muestra sobre pantalla de bloqueo y enciende la pantalla (`fullScreenIntent`).
-   - Opciones para **Apagar** (Dismiss) o **Aplazar** (Snooze) por un tiempo configurable.
+   - Nombre obligatorio + Nota opcional (visible en pantalla de bloqueo).
+   - Activación y desactivación rápida (toggle de 1 toque) y opción de **"Saltar próxima vez"** + indicador `"Suena en Xh Ym"`.
+   - **Recurrencia combinada Fecha + Hora**:
+     - *Por fecha*: Una vez, días de la semana (Lun-Dom), o cada $N$ días/semanas/meses.
+     - *Por hora*: Hora fija única o **recursiva cada $X$ horas/minutos dentro de una ventana activa** (ej. 08:00 a 22:00 o 24h) calculada en grilla fija.
+   - **Carpetas colapsables**: Un nivel con color/ícono y **switch maestro con memoria** (al reactivar la carpeta, restaura solo las alarmas que estaban encendidas). Las alarmas sin carpeta se agrupan al final de la lista.
+2. **Pantalla de Disparo (Ringing Screen) y Ciclo de No Atendida**:
+   - Se muestra sobre pantalla de bloqueo (`fullScreenIntent`) con 2 botones grandes: **Apagar** y **Aplazar** (usa el tiempo preconfigurado de esa alarma).
+   - **Ciclo automático global**: Si nadie la apaga, suena durante $X$ min (default 2 min), descansa $Y$ min (default 5 min) y vuelve a sonar hasta $N$ repeticiones configurables en Ajustes. Si se superpone con el siguiente horario programado (de la misma u otra alarma), se reinicia el contador de repeticiones y suena el nuevo turno.
 3. **Audio y Volumen**:
-   - Usa canal de audio de **Alarma** (`USAGE_ALARM` / `STREAM_ALARM`), ignorando modo silencio/no molestar si el sistema lo permite para alarmas.
-   - Sonido predeterminado o personalizado por alarma (archivo local o tono del sistema).
-4. **Diseño OLED**:
-   - Tema negro puro (`#000000`) para ahorro en pantallas AMOLED y mínima fatiga visual.
+   - Canal de **Alarma** (`USAGE_ALARM` / `STREAM_ALARM`), vibración configurable y opción de forzar volumen de alarma específico.
+   - Sonido predeterminado, selector de alarmas del sistema Android o archivo de audio local (`.mp3/.ogg/.wav`).
+4. **Diseño OLED y Backup**:
+   - Tema negro puro (`#000000`) y exportación/importación de backup en JSON local.
 5. **Batería y Supervivencia en Segundo Plano (Anti-Killer / Samsung / OEM)**:
    - **Cero polling en segundo plano**: No mantener servicios corriendo 24/7. Usar `AlarmManager.setAlarmClock()` nativo de Android, que registra la alarma a nivel de sistema operativo (muestra ícono de alarma en barra de estado, despierta el CPU de Doze exactamente a la hora y consume 0% de batería mientras espera).
    - **Foreground Service solo al sonar**: Se levanta un `ForegroundService` (`specialUse` / `mediaPlayback`) únicamente cuando la alarma se dispara.
