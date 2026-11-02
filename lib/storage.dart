@@ -6,6 +6,10 @@ import 'models.dart';
 class Storage {
   static String? _path;
 
+  static void resetPathForTests() {
+    _path = null;
+  }
+
   static Future<File> _file() async {
     _path ??= await AlarmApi.getStateFilePath();
     return File(_path!);

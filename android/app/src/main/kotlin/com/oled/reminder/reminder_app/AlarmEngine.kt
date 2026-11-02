@@ -57,7 +57,28 @@ object AlarmEngine {
     @Volatile
     var onStateChangedCallback: ((String) -> Unit)? = null
 
-    fun stateFile(ctx: Context): File = File(ctx.filesDir, "state.json")
+    fun deviceSafeCtx(ctx: Context): Context {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            ctx.createDeviceProtectedStorageContext()
+        } else {
+            ctx
+        }
+    }
+
+    fun stateFile(ctx: Context): File {
+        val primary = File(deviceSafeCtx(ctx).filesDir, "state.json")
+        if (!primary.exists()) {
+            val legacy = File(ctx.filesDir, "state.json")
+            if (legacy.exists()) {
+                try {
+                    legacy.copyTo(primary, overwrite = true)
+                } catch (_: Exception) {
+                    return legacy
+                }
+            }
+        }
+        return primary
+    }
 
     fun loadState(ctx: Context): JSONObject {
         val f = stateFile(ctx)
@@ -471,29 +492,30 @@ object AlarmEngine {
         notifyFlutter("reload")
     }
 
-    fun handleAutoTimeout(ctx: Context) {
-        val id = activeAlarmId ?: return
-        val rem = activeAlarmJson
-        val curRetry = activeRetryCount
-        stopRingingService(ctx)
-
-        val root = loadState(ctx)
+    /**
+     * Pure state transition when an alarm rings for [ringDurationMinutes] without user interaction.
+     * Mutates [root] in-place and returns true if a missed-alarm notification should be shown.
+     */
+    fun applyAutoTimeoutToState(
+        root: JSONObject,
+        alarmId: String,
+        curRetry: Int,
+        nowMs: Long
+    ): Boolean {
         val settings = root.optJSONObject("settings") ?: JSONObject()
         val autoSnoozeMins = settings.optInt("autoSnoozeMinutes", 5).coerceAtLeast(1)
         val maxRetries = settings.optInt("maxAutoRetries", 3).coerceAtLeast(0)
-        val nowMs = System.currentTimeMillis()
         val nextRetryMs = nowMs + autoSnoozeMins * 60_000L
 
-        // Check if another scheduled grid trigger occurs before or at nextRetryMs
         val nextGridOverall = findNextGridOnlyTarget(root, nowMs)
         val collidesWithNextSchedule = nextGridOverall != null && nextGridOverall.triggerMs <= nextRetryMs
 
+        var missed = false
         val reminders = root.optJSONArray("reminders") ?: JSONArray()
         for (i in 0 until reminders.length()) {
             val r = reminders.optJSONObject(i) ?: continue
-            if (r.optString("id") == id) {
+            if (r.optString("id") == alarmId) {
                 if (collidesWithNextSchedule) {
-                    // Collision with next scheduled slot: reset counter and let the scheduled slot fire
                     r.put("snoozedUntilMs", JSONObject.NULL)
                     r.put("autoRetryCount", 0)
                 } else if (curRetry < maxRetries) {
@@ -505,17 +527,31 @@ object AlarmEngine {
                 } else {
                     r.put("snoozedUntilMs", JSONObject.NULL)
                     r.put("autoRetryCount", 0)
-                    showMissedNotification(ctx, rem?.optString("name", "Alarma") ?: "Alarma")
+                    missed = true
                 }
                 break
             }
+        }
+        return missed
+    }
+
+    fun handleAutoTimeout(ctx: Context) {
+        val id = activeAlarmId ?: return
+        val rem = activeAlarmJson
+        val curRetry = activeRetryCount
+        stopRingingService(ctx)
+
+        val root = loadState(ctx)
+        val missed = applyAutoTimeoutToState(root, id, curRetry, System.currentTimeMillis())
+        if (missed) {
+            showMissedNotification(ctx, rem?.optString("name", "Alarma") ?: "Alarma")
         }
         saveState(ctx, root)
         syncSchedule(ctx)
         notifyFlutter("reload")
     }
 
-    private fun findNextGridOnlyTarget(root: JSONObject, nowMs: Long): ScheduledTarget? {
+    fun findNextGridOnlyTarget(root: JSONObject, nowMs: Long): ScheduledTarget? {
         val folders = root.optJSONArray("folders") ?: JSONArray()
         val folderEnabled = HashMap<String, Boolean>()
         for (i in 0 until folders.length()) {
