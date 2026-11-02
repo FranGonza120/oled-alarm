@@ -25,9 +25,21 @@ class MainActivity : FlutterActivity() {
 
     private var pendingSoundResult: MethodChannel.Result? = null
     private var channel: MethodChannel? = null
+    private val bgPermHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var bgPollTicks = 0
+    private val bgPermRunnable = object : Runnable {
+        override fun run() {
+            AlarmEngine.checkPermissionsAndNotifyIfReverted(applicationContext)
+            if (bgPollTicks < 90) { // Poll for 3 minutes while user is in Android Settings
+                bgPollTicks++
+                bgPermHandler.postDelayed(this, 2000L)
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AlarmEngine.startWatchingPermissions(applicationContext)
         if (intent?.getBooleanExtra("RINGING", false) == true || AlarmEngine.activeAlarmId != null) {
             enableLockscreenWake()
         }
@@ -46,13 +58,21 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
+        bgPermHandler.removeCallbacks(bgPermRunnable)
         AlarmEngine.checkPermissionsAndNotifyIfReverted(applicationContext)
         channel?.invokeMethod("onStateChanged", "reload")
     }
 
     override fun onStop() {
         super.onStop()
-        AlarmEngine.checkPermissionsAndNotifyIfReverted(applicationContext)
+        bgPollTicks = 0
+        bgPermHandler.removeCallbacks(bgPermRunnable)
+        bgPermHandler.postDelayed(bgPermRunnable, 1500L)
+    }
+
+    override fun onDestroy() {
+        bgPermHandler.removeCallbacks(bgPermRunnable)
+        super.onDestroy()
     }
 
     private fun enableLockscreenWake() {

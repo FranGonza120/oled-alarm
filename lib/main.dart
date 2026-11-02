@@ -716,7 +716,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       color: kAccentGrey,
                     ),
                     title: const Text(
-                      'Samsung One UI: Batería -> "No restringido"',
+                      'Acceso a información de aplicación',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                     subtitle: const Text(

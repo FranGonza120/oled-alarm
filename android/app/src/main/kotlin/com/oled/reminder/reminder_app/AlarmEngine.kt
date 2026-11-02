@@ -1,6 +1,7 @@
 package com.oled.reminder.reminder_app
 
 import android.app.AlarmManager
+import android.app.AppOpsManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -40,7 +41,7 @@ object AlarmEngine {
     const val CH_RINGING = "oled_alarm_ringing"
     const val CH_UPCOMING = "oled_alarm_upcoming_v2"
     const val CH_MISSED = "oled_alarm_missed"
-    const val CH_ALERTS = "oled_alarm_perm_alerts"
+    const val CH_ALERTS = "oled_alarm_perm_alerts_v2"
 
     const val NOTIF_RINGING = 1001
     const val NOTIF_UPCOMING = 1002
@@ -146,7 +147,15 @@ object AlarmEngine {
             "Alertas de permisos",
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = "Avulsa si se revierte un permiso crítico o de batería"
+            description = "Avisa si se revierte un permiso crítico o de batería"
+            enableVibration(true)
+            setSound(
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
         }
 
         nm.createNotificationChannel(ringCh)
@@ -331,9 +340,34 @@ object AlarmEngine {
 
     @Volatile
     private var lastAlertMask: Int = 0
+    @Volatile
+    private var appOpsWatching: Boolean = false
+
+    fun startWatchingPermissions(ctx: Context) {
+        if (appOpsWatching) return
+        appOpsWatching = true
+        val appCtx = ctx.applicationContext
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val appOps = appCtx.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+                appOps.startWatchingMode(
+                    "android:auto_revoke_permissions_if_unused",
+                    appCtx.packageName,
+                    AppOpsManager.OnOpChangedListener { _, _ ->
+                        Handler(Looper.getMainLooper()).post {
+                            checkPermissionsAndNotifyIfReverted(appCtx)
+                            notifyFlutter("reload")
+                        }
+                    }
+                )
+            } catch (_: Exception) {
+            }
+        }
+    }
 
     fun checkPermissionsAndNotifyIfReverted(ctx: Context): Map<String, Boolean> {
         ensureChannels(ctx)
+        startWatchingPermissions(ctx)
         val current = collectPermissions(ctx)
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
