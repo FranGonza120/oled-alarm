@@ -9,6 +9,8 @@ import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.Manifest
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
@@ -41,6 +43,7 @@ object AlarmEngine {
 
     const val NOTIF_RINGING = 1001
     const val NOTIF_UPCOMING = 1002
+    const val NOTIF_PERM_ALERT = 1003
     const val NOTIF_MISSED_BASE = 2000
 
     const val REQ_ALARM_CLOCK = 9001
@@ -276,8 +279,96 @@ object AlarmEngine {
         return best
     }
 
+    fun collectPermissions(ctx: Context): Map<String, Boolean> {
+        val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val am = ctx.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val batteryIgnored = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            pm.isIgnoringBatteryOptimizations(ctx.packageName)
+        } else true
+
+        val exactAlarm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            am.canScheduleExactAlarms()
+        } else true
+
+        val notifications = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        } else true
+
+        val fullScreen = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            nm.canUseFullScreenIntent()
+        } else true
+
+        val unusedAppsDisabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                !ctx.packageManager.isAutoRevokeWhitelisted
+            } catch (_: Exception) {
+                true
+            }
+        } else true
+
+        return mapOf(
+            "battery" to batteryIgnored,
+            "exactAlarm" to exactAlarm,
+            "notifications" to notifications,
+            "fullScreen" to fullScreen,
+            "unusedApps" to unusedAppsDisabled
+        )
+    }
+
+    fun checkPermissionsAndNotifyIfReverted(ctx: Context): Map<String, Boolean> {
+        ensureChannels(ctx)
+        val current = collectPermissions(ctx)
+        val prefs = deviceSafeCtx(ctx).getSharedPreferences("perm_monitor", Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+        var reverted = false
+
+        for ((k, isOk) in current) {
+            val wasGrantedEver = prefs.getBoolean("ever_$k", false)
+            if (isOk) {
+                editor.putBoolean("ever_$k", true)
+            } else if (wasGrantedEver) {
+                reverted = true
+            }
+        }
+        editor.apply()
+
+        val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val allOk = current.values.all { it }
+        if (allOk) {
+            nm.cancel(NOTIF_PERM_ALERT)
+        } else if (reverted) {
+            val openIntent = Intent(ctx, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val openPi = PendingIntent.getActivity(
+                ctx,
+                9010,
+                openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Notification.Builder(ctx, CH_MISSED)
+            } else {
+                @Suppress("DEPRECATION")
+                Notification.Builder(ctx)
+            }
+            val notif = builder
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle("Permiso crítico desactivado")
+                .setContentText("Un ajuste de OLED Alarm se revirtió. Tocá para revisarlo en Ajustes > Escudo.")
+                .setContentIntent(openPi)
+                .setAutoCancel(true)
+                .build()
+            nm.notify(NOTIF_PERM_ALERT, notif)
+        }
+        return current
+    }
+
     fun syncSchedule(ctx: Context) {
         ensureChannels(ctx)
+        checkPermissionsAndNotifyIfReverted(ctx)
         val root = loadState(ctx)
         val nowMs = System.currentTimeMillis()
         val next = findNextTarget(root, nowMs)
@@ -466,7 +557,7 @@ object AlarmEngine {
             saveState(ctx, root)
         }
         syncSchedule(ctx)
-        notifyFlutter("reload")
+        notifyFlutter("stopped_ringing")
     }
 
     fun handleManualSnooze(ctx: Context) {
@@ -491,7 +582,7 @@ object AlarmEngine {
         }
         saveState(ctx, root)
         syncSchedule(ctx)
-        notifyFlutter("reload")
+        notifyFlutter("stopped_ringing")
     }
 
     /**
@@ -550,7 +641,7 @@ object AlarmEngine {
         }
         saveState(ctx, root)
         syncSchedule(ctx)
-        notifyFlutter("reload")
+        notifyFlutter("stopped_ringing")
     }
 
     fun findNextGridOnlyTarget(root: JSONObject, nowMs: Long): ScheduledTarget? {

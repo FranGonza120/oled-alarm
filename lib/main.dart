@@ -164,6 +164,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _state.reminders
             .where((r) => r.folderId == null || !folderMap.containsKey(r.folderId))
             .toList();
+    final hasMissingPerms = _perms.values.any((v) => v == false);
 
     return Scaffold(
       appBar: AppBar(
@@ -179,7 +180,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
           IconButton(
             tooltip: 'Ajustes y Permisos',
-            icon: const Icon(Icons.settings_outlined),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.settings_outlined),
+                if (hasMissingPerms)
+                  Positioned(
+                    right: -1,
+                    top: -1,
+                    child: Container(
+                      width: 9,
+                      height: 9,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFF5252),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             onPressed: () => _openSettingsSheet(),
           ),
         ],
@@ -630,6 +649,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _openBatteryShieldSheet() async {
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: const Color(0xFF0A0A0A),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
@@ -647,7 +667,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               }
             }
 
-            return Padding(
+            return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -682,6 +702,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     title: 'Mostrar sobre pantalla de bloqueo (Full Screen)',
                     ok: _perms['fullScreen'] ?? false,
                     onTap: () => trigger('fullScreen'),
+                  ),
+                  _permTile(
+                    title: 'Desactivar "Administrar aplicación no usada"',
+                    ok: _perms['unusedApps'] ?? false,
+                    onTap: () => trigger('unusedApps'),
                   ),
                   const Divider(height: 20),
                   ListTile(
@@ -754,7 +779,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setSheet) {
-            return Padding(
+            return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 16,
                 16,
@@ -808,7 +833,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   const Divider(height: 24),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.shield_outlined, color: kAccentGrey),
+                    leading: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(Icons.shield_outlined, color: kAccentGrey),
+                        if (missingPerms > 0)
+                          Positioned(
+                            right: -1,
+                            top: -1,
+                            child: Container(
+                              width: 9,
+                              height: 9,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFF5252),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     title: const Text(
                       'Permisos y Blindaje Anti-Batería',
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
@@ -817,7 +860,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       missingPerms == 0
                           ? 'Todos los permisos activos'
                           : 'Faltan $missingPerms permisos por activar',
-                      style: const TextStyle(fontSize: 12, color: Colors.white60),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color:
+                            missingPerms == 0
+                                ? Colors.white60
+                                : const Color(0xFFFF5252),
+                      ),
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {

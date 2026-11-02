@@ -2,17 +2,13 @@ package com.oled.reminder.reminder_app
 
 import android.Manifest
 import android.app.Activity
-import android.app.AlarmManager
 import android.app.KeyguardManager
-import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
 import android.provider.OpenableColumns
 import android.provider.Settings
 import android.view.WindowManager
@@ -32,14 +28,26 @@ class MainActivity : FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableLockscreenWake()
+        if (intent?.getBooleanExtra("RINGING", false) == true || AlarmEngine.activeAlarmId != null) {
+            enableLockscreenWake()
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        enableLockscreenWake()
-        channel?.invokeMethod("onStateChanged", "ringing")
+        if (intent.getBooleanExtra("RINGING", false) || AlarmEngine.activeAlarmId != null) {
+            enableLockscreenWake()
+            channel?.invokeMethod("onStateChanged", "ringing")
+        } else {
+            channel?.invokeMethod("onStateChanged", "reload")
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        AlarmEngine.checkPermissionsAndNotifyIfReverted(applicationContext)
+        channel?.invokeMethod("onStateChanged", "reload")
     }
 
     private fun enableLockscreenWake() {
@@ -56,12 +64,35 @@ class MainActivity : FlutterActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
+    private fun releaseLockscreenAndCloseIfLocked() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(false)
+            setTurnScreenOn(false)
+        } else {
+            @Suppress("DEPRECATION")
+            window.clearFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            )
+        }
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        intent?.removeExtra("RINGING")
+
+        val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        if (km.isKeyguardLocked) {
+            moveTaskToBack(true)
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         val ch = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "alarm")
         channel = ch
 
         AlarmEngine.onStateChangedCallback = { event ->
+            if (event == "stopped_ringing") {
+                releaseLockscreenAndCloseIfLocked()
+            }
             ch.invokeMethod("onStateChanged", event)
         }
 
@@ -90,10 +121,12 @@ class MainActivity : FlutterActivity() {
                 }
                 "dismissRinging" -> {
                     AlarmEngine.handleDismiss(applicationContext)
+                    releaseLockscreenAndCloseIfLocked()
                     result.success(null)
                 }
                 "snoozeRinging" -> {
                     AlarmEngine.handleManualSnooze(applicationContext)
+                    releaseLockscreenAndCloseIfLocked()
                     result.success(null)
                 }
                 "pickSystemAlarmTone" -> {
@@ -130,34 +163,8 @@ class MainActivity : FlutterActivity() {
                     startActivityForResult(intent, REQ_AUDIO_FILE)
                 }
                 "getPermissionStatus" -> {
-                    val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-                    val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                    val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-                    val batteryIgnored = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        pm.isIgnoringBatteryOptimizations(packageName)
-                    } else true
-
-                    val exactAlarm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        am.canScheduleExactAlarms()
-                    } else true
-
-                    val notifications = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-                    } else true
-
-                    val fullScreen = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        nm.canUseFullScreenIntent()
-                    } else true
-
-                    result.success(
-                        mapOf(
-                            "battery" to batteryIgnored,
-                            "exactAlarm" to exactAlarm,
-                            "notifications" to notifications,
-                            "fullScreen" to fullScreen
-                        )
-                    )
+                    val status = AlarmEngine.checkPermissionsAndNotifyIfReverted(applicationContext)
+                    result.success(status)
                 }
                 "requestPermission" -> {
                     val kind = call.argument<String>("kind") ?: ""
@@ -199,6 +206,25 @@ class MainActivity : FlutterActivity() {
                                     startActivity(i)
                                 } catch (_: Exception) {
                                 }
+                            }
+                        }
+                        "unusedApps" -> {
+                            try {
+                                val i = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                    Intent(Intent.ACTION_AUTO_REVOKE_PERMISSIONS).apply {
+                                        data = Uri.parse("package:$packageName")
+                                    }
+                                } else {
+                                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                        data = Uri.parse("package:$packageName")
+                                    }
+                                }
+                                startActivity(i)
+                            } catch (_: Exception) {
+                                val fallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.parse("package:$packageName")
+                                }
+                                startActivity(fallback)
                             }
                         }
                         "appDetails" -> {

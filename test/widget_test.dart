@@ -293,6 +293,7 @@ void main() {
               'exactAlarm': true,
               'notifications': true,
               'fullScreen': true,
+              'unusedApps': false,
             };
           case 'syncSchedule':
             return null;
@@ -320,6 +321,19 @@ void main() {
 
       // Verificar string exacto del botón "Saltar proxima alarma"
       expect(find.text('Saltar proxima alarma'), findsNWidgets(2));
+
+      // Verificar punto indicador en engranaje y en escudo cuando falta algún permiso (unusedApps: false)
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Faltan 1 permisos por activar'), findsOneWidget);
+      await tester.tap(find.text('Permisos y Blindaje Anti-Batería'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Desactivar "Administrar aplicación no usada"'), findsOneWidget);
+      Navigator.of(tester.element(find.text('Desactivar "Administrar aplicación no usada"'))).pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verificar que crear una alarma nueva desde el editor la agrega a HomeScreen y guarda en disco
       await tester.tap(find.byType(FloatingActionButton));
