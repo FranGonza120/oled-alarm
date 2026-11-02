@@ -18,7 +18,7 @@ Documento de alcance y decisiones de diseño cerradas para la aplicación Androi
   - `id`, `folderId` (nullable = sin carpeta).
   - `name` (obligatorio) y `note` (descripción opcional que se muestra en grande al sonar).
   - `isEnabled` (switch individual de 1 toque).
-  - `skipNext` (booleano/timestamp para **"Saltar próxima ocurrencia"** sin desactivar la recurrencia).
+  - `skipNext` (booleano/timestamp para **"Saltar proxima alarma"** sin desactivar la recurrencia).
   - `snoozeMinutes` (tiempo de aplazamiento manual preconfigurado por alarma, ej. 10 min).
 
 ---
@@ -84,7 +84,9 @@ Configuración por alarma (con valores por defecto heredados de Ajustes):
 - **Pantalla Principal (Home)**:
   - Lista de **Carpetas colapsables** (con su color/ícono, contador de alarmas activas y switch maestro).
   - Al final de las carpetas, sección con las **Alarmas sin carpeta**.
-  - Cada tarjeta de alarma muestra: Nombre, resumen de recurrencia/ventana, **tiempo restante ("Suena en Xh Ym")**, switch individual y acción rápida **"Saltar próxima"** (cuando está activa).
+  - Cada tarjeta de alarma muestra: Nombre, resumen de recurrencia/ventana, **tiempo restante ("Suena en Xh Ym")**, switch individual y botón **"Saltar proxima alarma"** (cuando está activa).
+- **Notificación de Próxima Alarma**:
+  - Se muestra una notificación en la barra de estado con la información de la **próxima alarma a sonar** (nombre y horario) e incluye el botón de acción rápida **"Saltar proxima alarma"** para omitir ese disparo directamente desde la notificación sin abrir la app.
 - **Backup local**: Exportar e importar toda la base de datos (carpetas, alarmas y ajustes globales) en un archivo `.json` local.
 
 ---

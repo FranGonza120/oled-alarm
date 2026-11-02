@@ -5,7 +5,7 @@ Aplicación Android en Flutter para recordatorios tipo alarma de alta confiabili
 ## Requerimientos Funcionales (Ver detalle completo en [`docs/SPEC.md`](docs/SPEC.md))
 1. **Recordatorios como Alarma**:
    - Nombre obligatorio + Nota opcional (visible en pantalla de bloqueo).
-   - Activación y desactivación rápida (toggle de 1 toque) y opción de **"Saltar próxima vez"** + indicador `"Suena en Xh Ym"`.
+   - Activación y desactivación rápida (toggle de 1 toque), indicador `"Suena en Xh Ym"`, y botón **"Saltar proxima alarma"** tanto en la tarjeta de la app como en una **notificación con la próxima alarma a sonar**.
    - **Recurrencia combinada Fecha + Hora**:
      - *Por fecha*: Una vez, días de la semana (Lun-Dom), o cada $N$ días/semanas/meses.
      - *Por hora*: Hora fija única o **recursiva cada $X$ horas/minutos dentro de una ventana activa** (ej. 08:00 a 22:00 o 24h) calculada en grilla fija.
