@@ -90,7 +90,7 @@ class Reminder {
     this.endMinute = 1320, // 22:00
     this.intervalMinutes = 120,
     this.soundUri = '',
-    this.soundName = 'Predeterminado',
+    this.soundName = 'Default',
     this.vibrate = true,
     this.customVolume,
   });
@@ -149,7 +149,7 @@ class Reminder {
     endMinute: (j['endMinute'] as int?) ?? 1320,
     intervalMinutes: (j['intervalMinutes'] as int?) ?? 120,
     soundUri: (j['soundUri'] as String?) ?? '',
-    soundName: (j['soundName'] as String?) ?? 'Predeterminado',
+    soundName: (j['soundName'] as String?) ?? 'Default',
     vibrate: (j['vibrate'] as bool?) ?? true,
     customVolume: j['customVolume'] as int?,
   );
@@ -256,23 +256,23 @@ class Reminder {
         datePart = anchorDate;
       case DateRuleType.weekdays:
         if (weekdays.length == 7) {
-          datePart = 'Todos los días';
+          datePart = 'Every day';
         } else if (weekdays.length == 5 &&
             !weekdays.contains(6) &&
             !weekdays.contains(7)) {
-          datePart = 'Lun a Vie';
+          datePart = 'Mon to Fri';
         } else {
-          const names = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+          const names = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
           final sorted = [...weekdays]..sort();
           datePart = sorted.map((d) => names[d]).join(', ');
         }
       case DateRuleType.everyN:
         final unitLabel = switch (everyUnit) {
-          IntervalUnit.days => 'días',
-          IntervalUnit.weeks => 'sem',
-          IntervalUnit.months => 'meses',
+          IntervalUnit.days => 'days',
+          IntervalUnit.weeks => 'wks',
+          IntervalUnit.months => 'mos',
         };
-        datePart = 'Cada $everyN $unitLabel';
+        datePart = 'Every $everyN $unitLabel';
     }
 
     if (timeRule == TimeRuleType.fixed) {
@@ -282,7 +282,7 @@ class Reminder {
     final m = intervalMinutes % 60;
     final stepStr =
         h > 0 && m > 0 ? '${h}h ${m}m' : (h > 0 ? '${h}h' : '${m}m');
-    return '$datePart · Cada $stepStr (${fmtMin(startMinute)}-${fmtMin(endMinute)})';
+    return '$datePart · Every $stepStr (${fmtMin(startMinute)}-${fmtMin(endMinute)})';
   }
 }
 
@@ -359,13 +359,13 @@ String fmtMin(int min) =>
 
 String fmtCountdown(DateTime target, DateTime now) {
   final diff = target.difference(now);
-  if (diff.isNegative) return 'Ahora';
+  if (diff.isNegative) return 'Now';
   final days = diff.inDays;
   final hours = diff.inHours % 24;
   final mins = (diff.inMinutes % 60) + (diff.inSeconds % 60 > 0 ? 1 : 0);
   final adjHours = hours + (mins == 60 ? 1 : 0);
   final adjMins = mins % 60;
-  if (days > 0) return 'Suena en ${days}d ${adjHours}h';
-  if (adjHours > 0) return 'Suena en ${adjHours}h ${adjMins}m';
-  return 'Suena en ${adjMins < 1 ? 1 : adjMins}m';
+  if (days > 0) return 'Rings in ${days}d ${adjHours}h';
+  if (adjHours > 0) return 'Rings in ${adjHours}h ${adjMins}m';
+  return 'Rings in ${adjMins < 1 ? 1 : adjMins}m';
 }

@@ -312,26 +312,27 @@ void main() {
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
       expect(scaffold.backgroundColor ?? Theme.of(tester.element(find.byType(Scaffold).first)).scaffoldBackgroundColor, Colors.black);
 
-      // Verificar que la carpeta se renderiza ANTES (arriba) que las alarmas SIN CARPETA
+      // Verificar que la carpeta se renderiza ANTES (arriba) que las alarmas UNGROUPED
       final folderPos = tester.getTopLeft(find.text('Carpeta Salud'));
-      final ungroupedHeaderPos = tester.getTopLeft(find.text('SIN CARPETA'));
+      final ungroupedHeaderPos = tester.getTopLeft(find.text('UNGROUPED'));
       final ungroupedAlarmPos = tester.getTopLeft(find.text('Alarma Suelta Final'));
       expect(folderPos.dy < ungroupedHeaderPos.dy, isTrue);
       expect(ungroupedHeaderPos.dy < ungroupedAlarmPos.dy, isTrue);
 
-      // Verificar string exacto del botón "Saltar proxima alarma"
-      expect(find.text('Saltar proxima alarma'), findsNWidgets(2));
+      // Verificar string exacto del botón "Skip next alarm"
+      expect(find.text('Skip next alarm'), findsNWidgets(2));
 
       // Verificar punto indicador en engranaje y en escudo cuando falta algún permiso (unusedApps: false)
       await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Faltan 1 permisos por activar'), findsOneWidget);
-      await tester.tap(find.text('Permisos y Blindaje Anti-Batería'));
+      expect(find.text('1 permissions need attention'), findsOneWidget);
+      await tester.tap(find.text('Permissions & Battery Shield'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Desactivar "Administrar aplicación no usada"'), findsOneWidget);
-      Navigator.of(tester.element(find.text('Desactivar "Administrar aplicación no usada"'))).pop();
+      expect(find.text('Disable "Manage app if unused"'), findsOneWidget);
+      expect(find.text('App Info Access'), findsOneWidget);
+      Navigator.of(tester.element(find.text('Disable "Manage app if unused"'))).pop();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -343,7 +344,7 @@ void main() {
         find.byType(TextField).first,
         'Alarma Creada En Test',
       );
-      await tester.tap(find.text('GUARDAR'));
+      await tester.tap(find.text('SAVE'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.widgetWithText(InkWell, 'Alarma Creada En Test'), findsOneWidget);
@@ -353,8 +354,8 @@ void main() {
       });
     });
 
-    testWidgets('RingingScreen muestra nombre, nota y botones únicos de Aplazar y Apagar', (tester) async {
-      bool dismissed = false;
+    testWidgets('RingingScreen permite apagar tocando O deslizando sobre el botón X y aplazar', (tester) async {
+      int dismissCount = 0;
       bool snoozed = false;
 
       await tester.pumpWidget(
@@ -362,27 +363,33 @@ void main() {
           home: RingingScreen(
             alarm: const {
               'id': 'r1',
-              'name': 'Tomar antibiótico',
-              'note': 'Con un vaso lleno de agua',
+              'name': 'Take antibiotic',
+              'note': 'With a full glass of water',
               'snoozeMinutes': 15,
               'retryCount': 2,
             },
-            onDismiss: () => dismissed = true,
+            onDismiss: () => dismissCount++,
             onSnooze: () => snoozed = true,
           ),
         ),
       );
 
-      expect(find.text('Tomar antibiótico'), findsOneWidget);
-      expect(find.text('Con un vaso lleno de agua'), findsOneWidget);
-      expect(find.text('Aplazar (15m)'), findsOneWidget);
+      expect(find.text('Take antibiotic'), findsOneWidget);
+      expect(find.text('With a full glass of water'), findsOneWidget);
+      expect(find.text('Snooze (15m)'), findsOneWidget);
       expect(find.byIcon(Icons.close), findsOneWidget);
 
-      await tester.tap(find.text('Aplazar (15m)'));
+      await tester.tap(find.text('Snooze (15m)'));
       expect(snoozed, isTrue);
 
+      // 1) Tap on X button dismisses
       await tester.tap(find.byIcon(Icons.close));
-      expect(dismissed, isTrue);
+      expect(dismissCount, 1);
+
+      // 2) Drag / swipe over X button also dismisses
+      await tester.drag(find.byIcon(Icons.close), const Offset(80, 0));
+      await tester.pump();
+      expect(dismissCount, 2);
     });
   });
 }

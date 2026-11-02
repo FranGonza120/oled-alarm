@@ -174,12 +174,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
         actions: [
           IconButton(
-            tooltip: 'Nueva carpeta',
+            tooltip: 'New folder',
             icon: const Icon(Icons.create_new_folder_outlined),
             onPressed: () => _openFolderDialog(),
           ),
           IconButton(
-            tooltip: 'Ajustes y Permisos',
+            tooltip: 'Settings & Permissions',
             icon: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -211,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               padding: EdgeInsets.only(top: 120),
               child: Center(
                 child: Text(
-                  'Sin alarmas.\nTocá + para crear un recordatorio',
+                  'No alarms.\nTap + to create a reminder',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white54, fontSize: 15),
                 ),
@@ -224,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               const Padding(
                 padding: EdgeInsets.fromLTRB(6, 16, 6, 6),
                 child: Text(
-                  'SIN CARPETA',
+                  'UNGROUPED',
                   style: TextStyle(
                     color: Colors.white54,
                     fontSize: 12,
@@ -239,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'Nueva Alarma',
+        tooltip: 'New Alarm',
         backgroundColor: kAccentGrey,
         foregroundColor: Colors.black,
         onPressed: () => _openReminderEditor(),
@@ -313,7 +313,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           ),
                         ),
                         Text(
-                          '$activeCount/${items.length} activas · mantené presionado para editar',
+                          '$activeCount/${items.length} active · long press to edit',
                           style: const TextStyle(
                             fontSize: 11,
                             color: Colors.white54,
@@ -343,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               const Padding(
                 padding: EdgeInsets.all(12),
                 child: Text(
-                  'Carpeta vacía',
+                  'Empty folder',
                   style: TextStyle(color: Colors.white38, fontSize: 13),
                 ),
               )
@@ -457,10 +457,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   Expanded(
                     child: Text(
                       folderPaused && r.isEnabled
-                          ? 'Carpeta desactivada (en memoria)'
+                          ? 'Folder paused (saved in memory)'
                           : (nextDt != null
                               ? '${fmtCountdown(nextDt, now)} (${fmtDate(nextDt)} ${fmtMin(nextDt.hour * 60 + nextDt.minute)})'
-                              : 'Desactivada'),
+                              : 'Disabled'),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -476,7 +476,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ),
                       icon: const Icon(Icons.skip_next, size: 16),
                       label: const Text(
-                        'Saltar proxima alarma',
+                        'Skip next alarm',
                         style: TextStyle(fontSize: 12),
                       ),
                       onPressed: () => _skipNextOccurrence(r, folderMap),
@@ -512,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           builder: (ctx, setDialogState) {
             return AlertDialog(
               title: Text(
-                existing == null ? 'Nueva Carpeta' : 'Editar Carpeta',
+                existing == null ? 'New Folder' : 'Edit Folder',
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -521,7 +521,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     controller: nameCtrl,
                     autofocus: true,
                     decoration: const InputDecoration(
-                      labelText: 'Nombre de carpeta',
+                      labelText: 'Folder name',
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -578,13 +578,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       _save();
                     },
                     child: const Text(
-                      'Eliminar',
+                      'Delete',
                       style: TextStyle(color: Colors.redAccent),
                     ),
                   ),
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancelar'),
+                  child: const Text('Cancel'),
                 ),
                 FilledButton(
                   onPressed: () {
@@ -607,7 +607,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     Navigator.pop(ctx);
                     _save();
                   },
-                  child: const Text('Guardar'),
+                  child: const Text('Save'),
                 ),
               ],
             );
@@ -674,37 +674,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Permisos y Blindaje Anti-Batería',
+                    'Permissions & Battery Shield',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'La app usa AlarmManager.setAlarmClock() (0% consumo en espera). Activá estos permisos para que Samsung/Android jamás bloquee el disparo:',
+                    'Uses native AlarmManager.setAlarmClock() (0% idle battery). Enable these permissions so Android/OEM never blocks alarms:',
                     style: TextStyle(fontSize: 12, color: Colors.white70),
                   ),
                   const SizedBox(height: 12),
                   _permTile(
-                    title: 'Ignorar optimización de batería (Doze)',
+                    title: 'Ignore battery optimizations (Doze)',
                     ok: _perms['battery'] ?? false,
                     onTap: () => trigger('battery'),
                   ),
                   _permTile(
-                    title: 'Alarmas exactas (USE_EXACT_ALARM)',
+                    title: 'Exact alarms (USE_EXACT_ALARM)',
                     ok: _perms['exactAlarm'] ?? false,
                     onTap: () => trigger('exactAlarm'),
                   ),
                   _permTile(
-                    title: 'Notificaciones y próxima alarma',
+                    title: 'Notifications & upcoming alarm',
                     ok: _perms['notifications'] ?? false,
                     onTap: () => trigger('notifications'),
                   ),
                   _permTile(
-                    title: 'Mostrar sobre pantalla de bloqueo (Full Screen)',
+                    title: 'Show over lockscreen (Full Screen)',
                     ok: _perms['fullScreen'] ?? false,
                     onTap: () => trigger('fullScreen'),
                   ),
                   _permTile(
-                    title: 'Desactivar "Administrar aplicación no usada"',
+                    title: 'Disable "Manage app if unused"',
                     ok: _perms['unusedApps'] ?? false,
                     onTap: () => trigger('unusedApps'),
                   ),
@@ -716,11 +716,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       color: kAccentGrey,
                     ),
                     title: const Text(
-                      'Acceso a información de aplicación',
+                      'App Info Access',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                     subtitle: const Text(
-                      'Tocá para abrir Info de la App -> Batería -> Elegí "No restringido" y quitá de "Suspensión profunda".',
+                      'Tap to open App Info -> Battery -> Select "Unrestricted" and remove from "Deep sleeping apps".',
                       style: TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                     trailing: const Icon(Icons.open_in_new, size: 18),
@@ -751,12 +751,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       trailing:
           ok
               ? const Text(
-                'Activo',
+                'Active',
                 style: TextStyle(color: kAccentGrey, fontSize: 12),
               )
               : FilledButton.tonal(
                 onPressed: onTap,
-                child: const Text('Activar'),
+                child: const Text('Enable'),
               ),
     );
   }
@@ -791,26 +791,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Ajustes Globales (Alarmas no atendidas)',
+                    'Global Settings (Unanswered alarms)',
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   _numberRow(
-                    label: 'Duración sonando (minutos)',
+                    label: 'Ringing duration (minutes)',
                     value: ringMins,
                     min: 1,
                     max: 30,
                     onChanged: (v) => setSheet(() => ringMins = v),
                   ),
                   _numberRow(
-                    label: 'Espera antes de reintentar (minutos)',
+                    label: 'Pause before retry (minutes)',
                     value: pauseMins,
                     min: 1,
                     max: 60,
                     onChanged: (v) => setSheet(() => pauseMins = v),
                   ),
                   _numberRow(
-                    label: 'Cantidad de repeticiones (N ciclos)',
+                    label: 'Auto-retry count (N cycles)',
                     value: retries,
                     min: 0,
                     max: 20,
@@ -827,7 +827,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         Navigator.pop(ctx);
                         _save();
                       },
-                      child: const Text('Guardar Ajustes'),
+                      child: const Text('Save Settings'),
                     ),
                   ),
                   const Divider(height: 24),
@@ -853,13 +853,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ],
                     ),
                     title: const Text(
-                      'Permisos y Blindaje Anti-Batería',
+                      'Permissions & Battery Shield',
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
                       missingPerms == 0
-                          ? 'Todos los permisos activos'
-                          : 'Faltan $missingPerms permisos por activar',
+                          ? 'All permissions active'
+                          : '$missingPerms permissions need attention',
                       style: TextStyle(
                         fontSize: 12,
                         color:
@@ -876,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ),
                   const Divider(height: 24),
                   const Text(
-                    'Backup Local (JSON)',
+                    'Local Backup (JSON)',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
@@ -885,7 +885,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       Expanded(
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.copy),
-                          label: const Text('Copiar JSON'),
+                          label: const Text('Copy JSON'),
                           onPressed: () async {
                             await Clipboard.setData(
                               ClipboardData(text: _state.toJsonString()),
@@ -897,7 +897,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
-                                    'Backup JSON copiado al portapapeles',
+                                    'JSON backup copied to clipboard',
                                   ),
                                 ),
                               );
@@ -909,7 +909,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       Expanded(
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.restore),
-                          label: const Text('Importar JSON'),
+                          label: const Text('Import JSON'),
                           onPressed: () {
                             Navigator.pop(ctx);
                             _openImportJsonDialog();
@@ -960,19 +960,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: const Text('Importar Backup JSON'),
+            title: const Text('Import JSON Backup'),
             content: TextField(
               controller: ctrl,
               maxLines: 8,
               decoration: const InputDecoration(
-                hintText: 'Pegá acá el contenido JSON exportado...',
+                hintText: 'Paste exported JSON content here...',
                 border: OutlineInputBorder(),
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancelar'),
+                child: const Text('Cancel'),
               ),
               FilledButton(
                 onPressed: () {
@@ -985,11 +985,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     _save();
                   } catch (_) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('JSON inválido')),
+                      const SnackBar(content: Text('Invalid JSON')),
                     );
                   }
                 },
-                child: const Text('Restaurar'),
+                child: const Text('Restore'),
               ),
             ],
           ),
@@ -1049,6 +1049,10 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: initMin ~/ 60, minute: initMin % 60),
+      builder: (ctx, child) => MediaQuery(
+        data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
     );
     if (picked == null) return;
     setState(() {
@@ -1061,6 +1065,24 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
       } else {
         _draft.endMinute = total;
       }
+    });
+  }
+
+  Future<void> _pickIntervalDuration() async {
+    final initMin = _draft.intervalMinutes.clamp(1, 1439);
+    final picked = await showTimePicker(
+      context: context,
+      helpText: 'SELECT INTERVAL (HOURS : MINUTES)',
+      initialTime: TimeOfDay(hour: initMin ~/ 60, minute: initMin % 60),
+      builder: (ctx, child) => MediaQuery(
+        data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (picked == null) return;
+    final total = picked.hour * 60 + picked.minute;
+    setState(() {
+      _draft.intervalMinutes = total < 1 ? 1 : total;
     });
   }
 
@@ -1082,7 +1104,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Poné un nombre para la alarma')),
+        const SnackBar(content: Text('Please enter an alarm name')),
       );
       return;
     }
@@ -1122,12 +1144,20 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
     }
   }
 
+  String _fmtInterval(int mins) {
+    final h = mins ~/ 60;
+    final m = mins % 60;
+    if (h > 0 && m > 0) return '${h}h ${m}m (${fmtMin(mins)})';
+    if (h > 0) return '${h}h (${fmtMin(mins)})';
+    return '${m}m (${fmtMin(mins)})';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.existing == null ? 'Nueva Alarma' : 'Editar Alarma',
+          widget.existing == null ? 'New Alarm' : 'Edit Alarm',
         ),
         actions: [
           if (widget.existing != null && widget.onDelete != null)
@@ -1138,7 +1168,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
           TextButton(
             onPressed: _commitSave,
             child: const Text(
-              'GUARDAR',
+              'SAVE',
               style: TextStyle(
                 color: kAccentGrey,
                 fontWeight: FontWeight.bold,
@@ -1153,7 +1183,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
           TextField(
             controller: _nameCtrl,
             decoration: const InputDecoration(
-              labelText: 'Nombre del recordatorio *',
+              labelText: 'Reminder name *',
               border: OutlineInputBorder(),
             ),
           ),
@@ -1162,7 +1192,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
             controller: _noteCtrl,
             maxLines: 2,
             decoration: const InputDecoration(
-              labelText: 'Nota opcional (se muestra al sonar)',
+              labelText: 'Optional note (shown when ringing)',
               border: OutlineInputBorder(),
             ),
           ),
@@ -1170,13 +1200,13 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
           DropdownButtonFormField<String?>(
             initialValue: _draft.folderId,
             decoration: const InputDecoration(
-              labelText: 'Carpeta',
+              labelText: 'Folder',
               border: OutlineInputBorder(),
             ),
             items: [
               const DropdownMenuItem<String?>(
                 value: null,
-                child: Text('Sin carpeta (al final de la lista)'),
+                child: Text('Ungrouped (at the end of list)'),
               ),
               for (final f in widget.folders)
                 DropdownMenuItem<String?>(
@@ -1188,7 +1218,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
           ),
           const SizedBox(height: 20),
           const Text(
-            'REGLA DE FECHA',
+            'DATE RULE',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -1200,15 +1230,15 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
             segments: const [
               ButtonSegment(
                 value: DateRuleType.once,
-                label: Text('Una vez'),
+                label: Text('Once'),
               ),
               ButtonSegment(
                 value: DateRuleType.weekdays,
-                label: Text('Días sem.'),
+                label: Text('Weekdays'),
               ),
               ButtonSegment(
                 value: DateRuleType.everyN,
-                label: Text('Cada N...'),
+                label: Text('Every N...'),
               ),
             ],
             selected: {_draft.dateRule},
@@ -1222,8 +1252,8 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
               contentPadding: EdgeInsets.zero,
               title: Text(
                 _draft.dateRule == DateRuleType.once
-                    ? 'Fecha de disparo'
-                    : 'Fecha de inicio',
+                    ? 'Trigger date'
+                    : 'Start date',
               ),
               trailing: OutlinedButton.icon(
                 icon: const Icon(Icons.calendar_today, size: 16),
@@ -1238,7 +1268,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
                 for (int d = 1; d <= 7; d++)
                   FilterChip(
                     label: Text(
-                      const ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'][d],
+                      const ['', 'M', 'T', 'W', 'T', 'F', 'S', 'S'][d],
                     ),
                     selected: _draft.weekdays.contains(d),
                     onSelected: (sel) {
@@ -1258,7 +1288,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
           if (_draft.dateRule == DateRuleType.everyN)
             Row(
               children: [
-                const Text('Repetir cada: '),
+                const Text('Repeat every: '),
                 IconButton(
                   icon: const Icon(Icons.remove_circle_outline),
                   onPressed:
@@ -1283,15 +1313,15 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
                   items: const [
                     DropdownMenuItem(
                       value: IntervalUnit.days,
-                      child: Text('Días'),
+                      child: Text('Days'),
                     ),
                     DropdownMenuItem(
                       value: IntervalUnit.weeks,
-                      child: Text('Semanas'),
+                      child: Text('Weeks'),
                     ),
                     DropdownMenuItem(
                       value: IntervalUnit.months,
-                      child: Text('Meses'),
+                      child: Text('Months'),
                     ),
                   ],
                   onChanged:
@@ -1304,7 +1334,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
             ),
           const Divider(height: 28),
           const Text(
-            'REGLA DE HORA (FIJA O RECURSIVA POR HORA)',
+            'TIME RULE (FIXED OR HOURLY RECURRING)',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -1316,11 +1346,11 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
             segments: const [
               ButtonSegment(
                 value: TimeRuleType.fixed,
-                label: Text('Hora fija'),
+                label: Text('Fixed time'),
               ),
               ButtonSegment(
                 value: TimeRuleType.hourly,
-                label: Text('Recursiva por hora'),
+                label: Text('Hourly recurring'),
               ),
             ],
             selected: {_draft.timeRule},
@@ -1331,7 +1361,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
           if (_draft.timeRule == TimeRuleType.fixed)
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Hora de alarma'),
+              title: const Text('Alarm time'),
               trailing: FilledButton.tonal(
                 onPressed: () => _pickTime(true),
                 child: Text(
@@ -1347,14 +1377,14 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Ventana activa:'),
+                const Text('Active window:'),
                 TextButton(
                   onPressed:
                       () => setState(() {
                         _draft.startMinute = 0;
                         _draft.endMinute = 1439;
                       }),
-                  child: const Text('Todo el día (24h)'),
+                  child: const Text('All day (24h)'),
                 ),
               ],
             ),
@@ -1363,47 +1393,41 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => _pickTime(true),
-                    child: Text('Inicio: ${fmtMin(_draft.startMinute)}'),
+                    child: Text('Start: ${fmtMin(_draft.startMinute)}'),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => _pickTime(false),
-                    child: Text('Fin: ${fmtMin(_draft.endMinute)}'),
+                    child: Text('End: ${fmtMin(_draft.endMinute)}'),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Intervalo en grilla fija:',
-              style: TextStyle(fontSize: 13, color: Colors.white70),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                for (final mins in [15, 30, 45, 60, 120, 180, 240, 360])
-                  ChoiceChip(
-                    label: Text(
-                      mins < 60
-                          ? '${mins}m'
-                          : (mins % 60 == 0
-                              ? '${mins ~/ 60}h'
-                              : '${mins ~/ 60}h ${mins % 60}m'),
-                    ),
-                    selected: _draft.intervalMinutes == mins,
-                    onSelected:
-                        (_) => setState(() => _draft.intervalMinutes = mins),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Fixed-grid interval'),
+              subtitle: const Text(
+                'Tap to choose any hours & minutes',
+                style: TextStyle(fontSize: 12, color: Colors.white60),
+              ),
+              trailing: FilledButton.tonal(
+                onPressed: _pickIntervalDuration,
+                child: Text(
+                  _fmtInterval(_draft.intervalMinutes),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
                   ),
-              ],
+                ),
+              ),
             ),
           ],
           const Divider(height: 28),
           const Text(
-            'APLAZAMIENTO Y SONIDO (CANAL ALARMA)',
+            'SNOOZE & SOUND (ALARM STREAM)',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -1413,7 +1437,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
           const SizedBox(height: 8),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Tiempo del botón "Aplazar"'),
+            title: const Text('"Snooze" button duration'),
             trailing: DropdownButton<int>(
               value: _draft.snoozeMinutes,
               items: [
@@ -1427,7 +1451,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Sonido de alarma'),
+            title: const Text('Alarm sound'),
             subtitle: Text(
               _draft.soundName,
               style: const TextStyle(color: kAccentGrey),
@@ -1438,7 +1462,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
                 if (choice == 'default') {
                   setState(() {
                     _draft.soundUri = '';
-                    _draft.soundName = 'Predeterminado';
+                    _draft.soundName = 'Default';
                   });
                 } else if (choice == 'system') {
                   final picked = await AlarmApi.pickSystemAlarmTone(
@@ -1447,7 +1471,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
                   if (picked != null) {
                     setState(() {
                       _draft.soundUri = picked['uri'] ?? '';
-                      _draft.soundName = picked['name'] ?? 'Tono del sistema';
+                      _draft.soundName = picked['name'] ?? 'System tone';
                     });
                   }
                 } else if (choice == 'file') {
@@ -1455,7 +1479,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
                   if (picked != null) {
                     setState(() {
                       _draft.soundUri = picked['uri'] ?? '';
-                      _draft.soundName = picked['name'] ?? 'Archivo local';
+                      _draft.soundName = picked['name'] ?? 'Local file';
                     });
                   }
                 }
@@ -1464,32 +1488,32 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
                   (_) => const [
                     PopupMenuItem(
                       value: 'default',
-                      child: Text('Predeterminado del sistema'),
+                      child: Text('System default'),
                     ),
                     PopupMenuItem(
                       value: 'system',
-                      child: Text('Elegir alarma del sistema...'),
+                      child: Text('Pick system alarm tone...'),
                     ),
                     PopupMenuItem(
                       value: 'file',
-                      child: Text('Elegir archivo de audio (.mp3/.ogg)...'),
+                      child: Text('Pick audio file (.mp3/.ogg)...'),
                     ),
                   ],
             ),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Vibración'),
+            title: const Text('Vibration'),
             value: _draft.vibrate,
             onChanged: (v) => setState(() => _draft.vibrate = v),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Forzar volumen de alarma específico'),
+            title: const Text('Force custom alarm volume'),
             subtitle: Text(
               _draft.customVolume == null
-                  ? 'Usa el volumen de alarma actual del sistema'
-                  : 'Forzado al ${_draft.customVolume}%',
+                  ? 'Uses current system alarm volume'
+                  : 'Forced to ${_draft.customVolume}%',
             ),
             value: _draft.customVolume != null,
             onChanged:
@@ -1512,7 +1536,7 @@ class _ReminderEditorScreenState extends State<ReminderEditorScreen> {
   }
 }
 
-class RingingScreen extends StatelessWidget {
+class RingingScreen extends StatefulWidget {
   final Map<String, dynamic> alarm;
   final VoidCallback onDismiss;
   final VoidCallback onSnooze;
@@ -1524,33 +1548,59 @@ class RingingScreen extends StatelessWidget {
     required this.onSnooze,
   });
 
-  static String _formatDateLine(DateTime dt) {
+  static String formatDateLine(DateTime dt) {
     const days = [
       '',
-      'Lunes',
-      'Martes',
-      'Miércoles',
-      'Jueves',
-      'Viernes',
-      'Sábado',
-      'Domingo',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
     ];
     const months = [
       '',
-      'Ene',
+      'Jan',
       'Feb',
       'Mar',
-      'Abr',
+      'Apr',
       'May',
       'Jun',
       'Jul',
-      'Ago',
+      'Aug',
       'Sep',
       'Oct',
       'Nov',
-      'Dic',
+      'Dec',
     ];
     return '${days[dt.weekday]}, ${dt.day} ${months[dt.month]} ${dt.year}';
+  }
+
+  @override
+  State<RingingScreen> createState() => _RingingScreenState();
+}
+
+class _RingingScreenState extends State<RingingScreen> {
+  Offset _dragOffset = Offset.zero;
+  bool _dismissTriggered = false;
+
+  void _handlePanUpdate(DragUpdateDetails details) {
+    if (_dismissTriggered) return;
+    setState(() {
+      _dragOffset += details.delta;
+    });
+    if (_dragOffset.distance >= 42) {
+      _dismissTriggered = true;
+      widget.onDismiss();
+    }
+  }
+
+  void _handlePanEnd(DragEndDetails details) {
+    if (_dismissTriggered) return;
+    setState(() {
+      _dragOffset = Offset.zero;
+    });
   }
 
   @override
@@ -1558,10 +1608,10 @@ class RingingScreen extends StatelessWidget {
     final now = DateTime.now();
     final timeStr =
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    final dateStr = _formatDateLine(now);
-    final name = (alarm['name'] as String?) ?? 'Alarma';
-    final note = (alarm['note'] as String?) ?? '';
-    final snoozeMins = (alarm['snoozeMinutes'] as int?) ?? 10;
+    final dateStr = RingingScreen.formatDateLine(now);
+    final name = (widget.alarm['name'] as String?) ?? 'Alarm';
+    final note = (widget.alarm['note'] as String?) ?? '';
+    final snoozeMins = (widget.alarm['snoozeMinutes'] as int?) ?? 10;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -1627,34 +1677,39 @@ class RingingScreen extends StatelessWidget {
                 Column(
                   children: [
                     GestureDetector(
-                      onTap: onDismiss,
-                      child: Container(
-                        width: 112,
-                        height: 112,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.10),
-                        ),
-                        alignment: Alignment.center,
+                      onTap: widget.onDismiss,
+                      onPanUpdate: _handlePanUpdate,
+                      onPanEnd: _handlePanEnd,
+                      child: Transform.translate(
+                        offset: _dragOffset,
                         child: Container(
-                          width: 90,
-                          height: 90,
+                          width: 112,
+                          height: 112,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.22),
+                            color: Colors.white.withValues(alpha: 0.10),
                           ),
                           alignment: Alignment.center,
                           child: Container(
-                            width: 68,
-                            height: 68,
-                            decoration: const BoxDecoration(
+                            width: 90,
+                            height: 90,
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white,
+                              color: Colors.white.withValues(alpha: 0.22),
                             ),
-                            child: const Icon(
-                              Icons.close,
-                              color: Colors.black,
-                              size: 32,
+                            alignment: Alignment.center,
+                            child: Container(
+                              width: 68,
+                              height: 68,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.black,
+                                size: 32,
+                              ),
                             ),
                           ),
                         ),
@@ -1670,9 +1725,9 @@ class RingingScreen extends StatelessWidget {
                           foregroundColor: Colors.black,
                           shape: const StadiumBorder(),
                         ),
-                        onPressed: onSnooze,
+                        onPressed: widget.onSnooze,
                         child: Text(
-                          'Aplazar (${snoozeMins}m)',
+                          'Snooze (${snoozeMins}m)',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,

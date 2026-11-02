@@ -116,10 +116,10 @@ object AlarmEngine {
 
         val ringCh = NotificationChannel(
             CH_RINGING,
-            "Alarma sonando",
+            "Ringing Alarm",
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = "Pantalla de alarma activa"
+            description = "Active alarm screen"
             setSound(null, null)
             enableVibration(false)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
@@ -127,10 +127,10 @@ object AlarmEngine {
 
         val upCh = NotificationChannel(
             CH_UPCOMING,
-            "Próxima alarma",
+            "Upcoming Alarm",
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = "Muestra la próxima alarma y permite saltarla"
+            description = "Shows the next scheduled alarm and allows skipping it"
             setSound(null, null)
             enableVibration(false)
             setShowBadge(false)
@@ -138,16 +138,16 @@ object AlarmEngine {
 
         val missedCh = NotificationChannel(
             CH_MISSED,
-            "Alarmas perdidas",
+            "Missed Alarms",
             NotificationManager.IMPORTANCE_DEFAULT
         )
 
         val alertCh = NotificationChannel(
             CH_ALERTS,
-            "Alertas de permisos",
+            "Permission Alerts",
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = "Avisa si se revierte un permiso crítico o de batería"
+            description = "Alerts if a critical or battery permission is reverted"
             enableVibration(true)
             setSound(
                 RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
@@ -401,13 +401,13 @@ object AlarmEngine {
                 Notification.Builder(ctx)
             }
             val msg = if (current["unusedApps"] == false) {
-                "Se activó 'Administrar aplicación si no se usa'. Tocá para desactivarlo en Ajustes > Escudo."
+                "'Manage app if unused' was enabled. Tap to disable it in Settings > Shield."
             } else {
-                "Se revirtió un permiso crítico de OLED Alarm. Tocá para revisarlo en Ajustes > Escudo."
+                "A critical OLED Alarm permission was reverted. Tap to review in Settings > Shield."
             }
             val notif = builder
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle("Permiso crítico modificado")
+                .setContentTitle("Critical permission changed")
                 .setContentText(msg)
                 .setStyle(Notification.BigTextStyle().bigText(msg))
                 .setContentIntent(openPi)
@@ -474,8 +474,8 @@ object AlarmEngine {
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val r = target.reminder
         val id = r.optString("id")
-        val name = r.optString("name", "Alarma")
-        val fmt = SimpleDateFormat("EEE HH:mm", Locale.getDefault())
+        val name = r.optString("name", "Alarm")
+        val fmt = SimpleDateFormat("EEE HH:mm", Locale.ENGLISH)
         val timeStr = fmt.format(Date(target.triggerMs))
 
         val openIntent = Intent(ctx, MainActivity::class.java).apply {
@@ -509,14 +509,14 @@ object AlarmEngine {
 
         val action = Notification.Action.Builder(
             android.R.drawable.ic_media_next,
-            "Saltar proxima alarma",
+            "Skip next alarm",
             skipPi
         ).build()
 
         val notif = builder
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("Próxima: $name")
-            .setContentText("Suena: $timeStr")
+            .setContentTitle("Next: $name")
+            .setContentText("Rings: $timeStr")
             .setContentIntent(openPi)
             .setOngoing(true)
             .addAction(action)
@@ -691,7 +691,7 @@ object AlarmEngine {
         val root = loadState(ctx)
         val missed = applyAutoTimeoutToState(root, id, curRetry, System.currentTimeMillis())
         if (missed) {
-            showMissedNotification(ctx, rem?.optString("name", "Alarma") ?: "Alarma")
+            showMissedNotification(ctx, rem?.optString("name", "Alarm") ?: "Alarm")
         }
         saveState(ctx, root)
         syncSchedule(ctx)
@@ -730,8 +730,8 @@ object AlarmEngine {
         }
         val notif = builder
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("Alarma perdida: $name")
-            .setContentText("No se atendió tras los reintentos configurados")
+            .setContentTitle("Missed alarm: $name")
+            .setContentText("Unanswered after configured retries")
             .setAutoCancel(true)
             .build()
         nm.notify(NOTIF_MISSED_BASE + (System.currentTimeMillis() % 500).toInt(), notif)
@@ -814,7 +814,7 @@ class AlarmService : Service() {
             acquire(ringMins * 60_000L + 10_000L)
         }
 
-        val name = rem?.optString("name", "Alarma") ?: "Alarma"
+        val name = rem?.optString("name", "Alarm") ?: "Alarm"
         val note = rem?.optString("note", "") ?: ""
         val snoozeMins = rem?.optInt("snoozeMinutes", 10) ?: 10
 
@@ -858,19 +858,19 @@ class AlarmService : Service() {
 
         val dismissAction = Notification.Action.Builder(
             android.R.drawable.ic_menu_close_clear_cancel,
-            "Apagar",
+            "Dismiss",
             dismissPi
         ).build()
         val snoozeAction = Notification.Action.Builder(
             android.R.drawable.ic_popup_reminder,
-            "Aplazar (${snoozeMins}m)",
+            "Snooze (${snoozeMins}m)",
             snoozePi
         ).build()
 
         val notif = builder
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(name)
-            .setContentText(if (note.isNotBlank()) note else "Alarma sonando")
+            .setContentText(if (note.isNotBlank()) note else "Ringing alarm")
             .setCategory(Notification.CATEGORY_ALARM)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setOngoing(true)

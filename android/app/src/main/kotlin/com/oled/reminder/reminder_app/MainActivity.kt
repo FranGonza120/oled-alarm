@@ -137,7 +137,7 @@ class MainActivity : FlutterActivity() {
                     } else {
                         val map = HashMap<String, Any?>()
                         map["id"] = active.optString("id")
-                        map["name"] = active.optString("name", "Alarma")
+                        map["name"] = active.optString("name", "Alarm")
                         map["note"] = active.optString("note", "")
                         map["snoozeMinutes"] = active.optInt("snoozeMinutes", 10)
                         map["retryCount"] = AlarmEngine.activeRetryCount
@@ -282,10 +282,10 @@ class MainActivity : FlutterActivity() {
                 @Suppress("DEPRECATION")
                 val uri: Uri? = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
                 if (uri == null) {
-                    cb.success(mapOf("uri" to "", "name" to "Predeterminado"))
+                    cb.success(mapOf("uri" to "", "name" to "Default"))
                 } else {
                     val rt = RingtoneManager.getRingtone(this, uri)
-                    val title = rt?.getTitle(this) ?: "Tono de alarma"
+                    val title = rt?.getTitle(this) ?: "Alarm tone"
                     cb.success(mapOf("uri" to uri.toString(), "name" to title))
                 }
             }
@@ -301,7 +301,7 @@ class MainActivity : FlutterActivity() {
                         )
                     } catch (_: Exception) {
                     }
-                    var displayName = "Archivo de audio"
+                    var displayName = "Audio file"
                     contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                         val nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                         if (nameIdx >= 0 && cursor.moveToFirst()) {
