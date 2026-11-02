@@ -106,3 +106,25 @@ Configuración por alarma (con valores por defecto heredados de Ajustes):
      - `SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM`.
      - `USE_FULL_SCREEN_INTENT` (Android 14+) y `POST_NOTIFICATIONS` (Android 13+).
    - Acceso rápido e instrucciones específicas para Samsung (One UI: sacar de *"Aplicaciones en suspensión profunda"* y poner batería en *"No restringido"*).
+
+---
+
+## 7. Estándares de Código y Nomenclatura (`ponytail ultra`)
+
+1. **Nomenclatura**:
+   - Archivos Dart: `snake_case.dart` (`models.dart`, `storage.dart`, `alarm_api.dart`).
+   - Clases/Enums: `PascalCase` (`Reminder`, `Folder`, `DateRule`).
+   - Variables/Funciones/Campos JSON: `camelCase` (`isEnabled`, `skipNext`, `snoozeMinutes`).
+   - Constantes: `camelCase` con `const`.
+   - Kotlin (Android): `PascalCase` clases (`AlarmReceiver`, `AlarmService`), `camelCase` métodos, `UPPER_SNAKE_CASE` extras/acciones de Intent.
+2. **Estructura Plana (Máximo 5 archivos Dart)**:
+   - `lib/main.dart` (App + Tema OLED + Home + Editor + Ajustes) o `lib/screens.dart` si supera 400 líneas.
+   - `lib/models.dart` (Datos + cálculo puro de próximo disparo `nextTrigger()`).
+   - `lib/storage.dart` (Lectura/escritura JSON local en un solo archivo, sirve directo como backup).
+   - `lib/alarm_api.dart` (`MethodChannel('alarm')` hacia Kotlin).
+3. **Cero Abstracciones Basura (YAGNI Extremo)**:
+   - **Prohibido**: Clean Architecture, UseCases, Repositories, Interfaces con 1 implementación, BLoC/Riverpod/Provider, `freezed`, `json_serializable`, `build_runner`, `sqflite`.
+   - **Estado**: `StatefulWidget` + `setState` o `ValueNotifier` nativo.
+   - **Serialización**: `toJson()` y `fromJson(Map<String, dynamic>)` escritos a mano en 10 líneas.
+   - **Persistencia**: Un único archivo `state.json` en el directorio de la app (compartido entre Dart y el `BootReceiver` de Kotlin para reprogramar sin levantar el motor de Flutter en boot).
+   - **Deuda explícita**: Cualquier atajo con techo conocido lleva comentario `// ponytail: <motivo>, cambiar cuando <condición>`.
